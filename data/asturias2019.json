@@ -1,0 +1,67 @@
+{
+    "Seats": {
+        "Occidente": "6",
+        "Centro": "34",
+        "Oriente": "5"
+    },
+    "Barrier": {
+        "Occidente": "0.03",
+        "Centro": "0.03",
+        "Oriente": "0.03"
+    },
+    "PSOE": {
+        "Occidente": "25228",
+        "Centro": "146201",
+        "Oriente": "16033"
+    },
+    "PP": {
+        "Occidente": "15052",
+        "Centro": "69314",
+        "Oriente": "8781"
+    },
+    "Ciudadanos": {
+        "Occidente": "5761",
+        "Centro": "64338",
+        "Oriente": "4172"
+    },
+    "Podemos": {
+        "Occidente": "4612",
+        "Centro": "50964",
+        "Oriente": "3098"
+    },
+    "IU": {
+        "Occidente": "3012",
+        "Centro": "30851",
+        "Oriente": "1311"
+    },
+    "Foro": {
+        "Occidente": "3150",
+        "Centro": "28024",
+        "Oriente": "3513"
+    },
+    "Vox": {
+        "Occidente": "2668",
+        "Centro": "29503",
+        "Oriente": "2039"
+    },
+    "PACMA": {
+        "Occidente": "0",
+        "Centro": "3426",
+        "Oriente": "0"
+    },
+    "Verdes-Equo": {
+        "Occidente": "202",
+        "Centro": "1926",
+        "Oriente": "0"
+    },
+    "Andecha Astur": {
+        "Occidente": "109",
+        "Centro": "1363",
+        "Oriente": "112"
+    },
+    "PCTE": {
+        "Occidente": "108",
+        "Centro": "914",
+        "Oriente": "61"
+    }
+}
