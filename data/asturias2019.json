@@ -19,12 +19,12 @@
         "Centro": 69314,
         "Oriente": 8781
     },
-    "Ciudadanos": {
+    "Cs": {
         "Occidente": 5761,
         "Centro": 64338,
         "Oriente": 4172
     },
-    "Podemos": {
+    "PODEMOS": {
         "Occidente": 4612,
         "Centro": 50964,
         "Oriente": 3098
@@ -34,12 +34,12 @@
         "Centro": 30851,
         "Oriente": 1311
     },
-    "Foro": {
+    "FORO": {
         "Occidente": 3150,
         "Centro": 28024,
         "Oriente": 3513
     },
-    "Vox": {
+    "VOX": {
         "Occidente": 2668,
         "Centro": 29503,
         "Oriente": 2039
@@ -49,12 +49,12 @@
         "Centro": 3426,
         "Oriente": 0
     },
-    "Verdes-Equo": {
+    "VERDES-EQUO": {
         "Occidente": 202,
         "Centro": 1926,
         "Oriente": 0
     },
-    "Andecha Astur": {
+    "ANDECHA": {
         "Occidente": 109,
         "Centro": 1363,
         "Oriente": 112
