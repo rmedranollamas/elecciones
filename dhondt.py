@@ -4,30 +4,31 @@ import argparse
 import collections
 import json
 import math
+import os
 import matplotlib.pyplot as plt
 
 
 COLORS = {
     'PSOE': 'red',
-    'PODEMOS': 'purple',
-    'PODEMOS-IU': 'purple',
-    'ECP-GUANYEM EL CANVI': 'purple',
-    'PODEMOS-EU': 'purple',
-    'IU': 'red',
+    'PODEMOS': 'mediumpurple',
+    'PODEMOS-IU': 'darkviolet',
+    'ECP-GUANYEM EL CANVI': 'slateblue',
+    'PODEMOS-EU': 'darkmagenta',
+    'IU': 'darkred',
     'EH Bildu': 'green',
 	  'ERC-SOBIRANISTES': 'yellow',
-    'JxCAT-JUNTS': 'blue',
+    'JxCAT-JUNTS': 'turquoise',
     'CUP-PR': 'yellow',
-    'EAJ-PNV': 'green',
-    'BNG': 'green',
-    'MÁS PAÍS-EQUO': 'green',
+    'EAJ-PNV': 'darkgreen',
+    'BNG': 'lightsteelblue',
+    'MÁS PAÍS-EQUO': 'limegreen',
     'MÉS COMPROMÍS': 'orange',
-    '¡TERUEL EXISTE!': 'green',
-    'PRC': 'green',
-    'CCa-PNC-NC': 'blue',
-    'FORO': 'blue',
-    'NA+': 'red',
-    'Cs': 'orange',
+    '¡TERUEL EXISTE!': 'forestgreen',
+    'PRC': 'yellowgreen',
+    'CCa-PNC-NC': 'gold',
+    'FORO': 'royalblue',
+    'NA+': 'maroon',
+    'Cs': 'darkorange',
 	  'VOX': 'green',
     'PP': 'blue',
 }
@@ -81,13 +82,15 @@ def dhondt(votes, seats):
     return allocations
 
 
-def plot_allocations(totals):
+def plot_allocations(totals, filename):
     label = []
     val = []
     colors = []
+    legend = []
 
     for party, color in COLORS.items():
         if party in totals:
+            legend.append('{}:  {}'.format(party, totals[party]))
             if totals[party] >= 10:
                 label.append(party)
             else:
@@ -115,7 +118,8 @@ def plot_allocations(totals):
                           counterclock=False,
                           startangle=180)
     wedges[-1].set_visible(False)
-    plt.show()
+    ax.legend(legend, loc='lower center', ncol=2)
+    plt.savefig(filename, bbox_inches='tight')
 
 
 if __name__ == '__main__':
@@ -127,9 +131,11 @@ if __name__ == '__main__':
     summary, removed = tally(results, barrier)
 
     totals = collections.defaultdict(int)
+    total_removed = 0
     for circunscription, parties in summary.items():
         print('\nCircunscription:', circunscription)
         print('Votes under threshold:', removed[circunscription])
+        total_removed += removed[circunscription]
 
         allocations = dhondt(parties, int(seats[circunscription]))
         print('Allocations')
@@ -140,5 +146,8 @@ if __name__ == '__main__':
     print('\nAggregate results')
     for party, allocation in totals.items():
         print('\t', party, allocation)
+    print('Total allocated seat:', sum(totals.values()))
+    print('Total votes under threshold:', total_removed)
 
-    plot_allocations(totals)
+
+    plot_allocations(totals, os.path.splitext(args.input)[0] + '.png')
