@@ -4,6 +4,33 @@ import argparse
 import collections
 import json
 import math
+import matplotlib.pyplot as plt
+
+
+COLORS = {
+    'PSOE': 'red',
+    'PODEMOS': 'purple',
+    'PODEMOS-IU': 'purple',
+    'ECP-GUANYEM EL CANVI': 'purple',
+    'PODEMOS-EU': 'purple',
+    'IU': 'red',
+    'EH Bildu': 'green',
+	  'ERC-SOBIRANISTES': 'yellow',
+    'JxCAT-JUNTS': 'blue',
+    'CUP-PR': 'yellow',
+    'EAJ-PNV': 'green',
+    'BNG': 'green',
+    'MÁS PAÍS-EQUO': 'green',
+    'MÉS COMPROMÍS': 'orange',
+    '¡TERUEL EXISTE!': 'green',
+    'PRC': 'green',
+    'CCa-PNC-NC': 'blue',
+    'FORO': 'blue',
+    'NA+': 'red',
+    'Cs': 'orange',
+	  'VOX': 'green',
+    'PP': 'blue',
+}
 
 
 def read_results(filename):
@@ -54,6 +81,43 @@ def dhondt(votes, seats):
     return allocations
 
 
+def plot_allocations(totals):
+    label = []
+    val = []
+    colors = []
+
+    for party, color in COLORS.items():
+        if party in totals:
+            if totals[party] >= 10:
+                label.append(party)
+            else:
+                label.append('')
+            val.append(totals[party])
+            colors.append(color)
+
+    label.append('')
+    val.append(sum(val))
+    colors.append('white')
+
+    def show_value(pct):
+        v = int(pct / 100 * sum(val))
+        if 350 > v >= 10:
+            return str(v)
+        return ''
+
+    fig = plt.figure(figsize=(12,6), dpi=100)
+    ax = fig.add_subplot(1,1,1)
+    wedges, _, _ = ax.pie(val,
+                          wedgeprops={'width': 0.4, 'edgecolor': 'w'},
+                          labels=label,
+                          colors=colors,
+                          autopct=show_value,
+                          counterclock=False,
+                          startangle=180)
+    wedges[-1].set_visible(False)
+    plt.show()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input')
@@ -76,3 +140,5 @@ if __name__ == '__main__':
     print('\nAggregate results')
     for party, allocation in totals.items():
         print('\t', party, allocation)
+
+    plot_allocations(totals)
