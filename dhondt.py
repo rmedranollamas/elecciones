@@ -25,6 +25,11 @@ COLORS = {
     'MÉS COMPROMÍS': 'orange',
     '¡TERUEL EXISTE!': 'forestgreen',
     'PRC': 'yellowgreen',
+    'MÉS-ESQUERRA': 'yellow',
+    'PUM+J': 'grey',
+    'M PAÍS-CHA-EQUO': 'black',
+    'PACMA': 'lightgreen',
+    'RECORTES CERO-GV': 'black',
     'CCa-PNC-NC': 'gold',
     'FORO': 'royalblue',
     'NA+': 'maroon',
@@ -68,7 +73,7 @@ def tally(results, barrier):
     return summary, removed
 
 
-def dhondt(votes, seats):
+def dhondt_allocation(votes, seats):
     quotients = dict(votes.items())
     allocations = collections.defaultdict(int)
     allocated = 0
@@ -82,7 +87,29 @@ def dhondt(votes, seats):
     return allocations
 
 
-def plot_allocations(totals, filename):
+def proportional_allocation(votes, seats):
+    allocations = collections.defaultdict(int)
+    allocated = 0
+    total_votes = sum(votes.values())
+
+    for party, result in sorted(votes.items(),
+                                key=lambda item: item[1], reverse=True):
+        allocation = max(math.floor(result / total_votes * seats), 1)
+        allocations[party] = allocation
+        allocated += allocation
+        if allocated >= seats:
+            break
+
+    return allocations
+
+
+def do_allocation(proportional, votes, seats):
+    if proportional:
+        return proportional_allocation(votes, seats)
+    return dhondt_allocation(votes, seats)
+
+
+def plot_allocations(totals, filename, seats):
     label = []
     val = []
     colors = []
@@ -102,21 +129,14 @@ def plot_allocations(totals, filename):
     val.append(sum(val))
     colors.append('white')
 
-    def show_value(pct):
-        v = int(pct / 100 * sum(val))
-        if 350 > v >= 10:
-            return str(v)
-        return ''
-
     fig = plt.figure(figsize=(12,6), dpi=100)
     ax = fig.add_subplot(1,1,1)
-    wedges, _, _ = ax.pie(val,
-                          wedgeprops={'width': 0.4, 'edgecolor': 'w'},
-                          labels=label,
-                          colors=colors,
-                          autopct=show_value,
-                          counterclock=False,
-                          startangle=180)
+    wedges, _  = ax.pie(val,
+                        wedgeprops={'width': 0.4, 'edgecolor': 'w'},
+                        labels=label,
+                        colors=colors,
+                        counterclock=False,
+                        startangle=180)
     wedges[-1].set_visible(False)
     ax.legend(legend, loc='lower center', ncol=2)
     plt.savefig(filename, bbox_inches='tight')
@@ -125,6 +145,7 @@ def plot_allocations(totals, filename):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input')
+    parser.add_argument('--proportional', action=argparse.BooleanOptionalAction)
     args = parser.parse_args()
 
     seats, barrier, results = read_results(args.input)
@@ -137,7 +158,8 @@ if __name__ == '__main__':
         print('Votes under threshold:', removed[circunscription])
         total_removed += removed[circunscription]
 
-        allocations = dhondt(parties, int(seats[circunscription]))
+        allocations = do_allocation(
+            args.proportional, parties, int(seats[circunscription]))
         print('Allocations')
         for party, allocation in allocations.items():
             print('\t', party, allocation)
@@ -146,8 +168,11 @@ if __name__ == '__main__':
     print('\nAggregate results')
     for party, allocation in totals.items():
         print('\t', party, allocation)
-    print('Total allocated seat:', sum(totals.values()))
+    total_seats = sum(totals.values())
+    print('Total allocated seat:', total_seats)
     print('Total votes under threshold:', total_removed)
 
 
-    plot_allocations(totals, os.path.splitext(args.input)[0] + '.png')
+    output_name =  '-proportional.png' if args.proportional else '-dhondt.png'
+    plot_allocations(
+        totals, os.path.splitext(args.input)[0] + output_name, total_seats)
