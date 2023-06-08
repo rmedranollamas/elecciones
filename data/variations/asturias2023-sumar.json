@@ -1,0 +1,72 @@
+{
+    "Seats": {
+        "Occidente": 6,
+        "Centro": 34,
+        "Oriente": 5
+    },
+    "Barrier": {
+        "Occidente": 0.03,
+        "Centro": 0.03,
+        "Oriente": 0.03
+    },
+    "PSOE": {
+        "Occidente": 21717,
+        "Centro": 153672,
+        "Oriente": 15003
+    },
+    "PP": {
+        "Occidente": 20481,
+        "Centro": 135781,
+        "Oriente": 14069
+    },
+    "Cs": {
+        "Occidente": 279,
+        "Centro": 4191,
+        "Oriente": 304
+    },
+    "SUMAR": {
+        "Occidente": 4411,
+        "Centro": 57648,
+        "Oriente": 2853
+    },
+    "FORO": {
+        "Occidente": 3995,
+        "Centro": 13831,
+        "Oriente": 1487
+    },
+    "VOX": {
+        "Occidente": 3771,
+        "Centro": 45202,
+        "Oriente": 3573
+    },
+    "ANDECHA": {
+        "Occidente": 74,
+        "Centro": 1026,
+        "Oriente": 96
+    },
+    "PCTE": {
+        "Occidente": 110,
+        "Centro": 1139,
+        "Oriente": 65
+    },
+    "PUM+J": {
+        "Occidente": 31,
+        "Centro": 624,
+        "Oriente": 62
+    },
+    "SMP": {
+        "Occidente": 85,
+        "Centro": 941,
+        "Oriente": 68
+    },
+    "SOS OCCIDENTE": {
+        "Occidente": 2545,
+        "Centro": 0,
+        "Oriente": 0
+    },
+    "SOS ASTURIAS": {
+        "Occidente": 0,
+        "Centro": 2772,
+        "Oriente": 396
+    }
+}
