@@ -273,12 +273,51 @@ def ratings_command(
     resolved_polls = polls_dir or get_polls_dir()
     resolved_elections = elections_dir or get_elections_dir()
     resolved_output = output or (get_outputs_dir() / "pollster_ratings.csv")
-    _ = (resolved_polls, resolved_elections, resolved_output)
-    typer.echo(
-        "Error: Pollster ratings engine (`elecciones.models.pollster_ratings`) is scheduled in M3.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
+    try:
+        from elecciones.models.pollster_ratings import (
+            compute_pollster_ratings,
+            save_pollster_ratings,
+        )
+
+        ratings = compute_pollster_ratings(
+            polls_dir=resolved_polls,
+            elections_dir=resolved_elections,
+        )
+        out_path = save_pollster_ratings(ratings, output_path=resolved_output)
+        console = Console()
+        table = Table(
+            title=f"Pollster Accuracy & House-Effect Scorecard ({len(ratings)} houses)",
+            show_header=True,
+            header_style="bold cyan",
+        )
+        table.add_column("Pollster", style="bold")
+        table.add_column("Grade", justify="center")
+        table.add_column("Elec.", justify="right")
+        table.add_column("2026", justify="right")
+        table.add_column("Shrunk MAE", justify="right")
+        table.add_column("Wt", justify="right")
+        table.add_column("Herd.", justify="right")
+        table.add_column("dPP", justify="right")
+        table.add_column("dPSOE", justify="right")
+        table.add_column("dVOX", justify="right")
+        for r in ratings[:20]:
+            table.add_row(
+                r.pollster,
+                r.grade,
+                str(r.n_elections),
+                str(r.n_polls_2026),
+                f"{r.shrunk_mae:.2f}",
+                f"{r.grade_weight:.2f}",
+                f"{r.herding_penalty:.2f}",
+                f"{r.delta_PP:+.2f}",
+                f"{r.delta_PSOE:+.2f}",
+                f"{r.delta_VOX:+.2f}",
+            )
+        console.print(table)
+        console.print(f"Saved pollster ratings -> {out_path}")
+    except (FileNotFoundError, SchemaValidationError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command(name="backtest", cls=_WideHelpCommand)
