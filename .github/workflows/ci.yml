@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python 3.11 & dependencies
+        run: |
+          uv python install 3.11
+          uv sync --frozen
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Run pytest suite
+        run: uv run pytest
+
+      - name: Smoke CLI & LOREG Art. 69.7 blackout check
+        run: |
+          uv run elecciones allocate --help >/dev/null
+          uv run elecciones fetch --offline --respect-blackout --now 2026-11-25T12:00:00+01:00 | grep -q "LOREG Art. 69.7 blackout window active"
+          uv run elecciones forecast --as-of 2026-11-16 --n-sims 2000 --output /tmp/smoke_fc.json
+          uv run elecciones dashboard --input /tmp/smoke_fc.json --output /tmp/smoke_dash.html
+          test -s /tmp/smoke_dash.html

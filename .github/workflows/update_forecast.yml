@@ -1,0 +1,94 @@
+name: Update 29-N Forecast & Pages
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      offline:
+        description: "Run using cached/committed CSV snapshots instead of live HTTP"
+        type: boolean
+        default: false
+      force_during_blackout:
+        description: "Bypass LOREG Art. 69.7 blackout guard (manual local debugging only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-and-forecast
+  cancel-in-progress: false
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check LOREG Art. 69.7 blackout window (2026-11-24 00:00 CET to 2026-11-29 20:00 CET)
+        id: blackout
+        run: |
+          NOW_CET=$(TZ=Europe/Madrid date +"%Y-%m-%dT%H:%M:%S")
+          echo "Madrid timestamp: $NOW_CET"
+          if [[ "${{ inputs.force_during_blackout }}" != "true" ]] && \
+             [[ "$NOW_CET" > "2026-11-23T23:59:59" ]] && \
+             [[ "$NOW_CET" < "2026-11-29T20:00:00" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "LOREG Art. 69.7 blackout active — skipping automated poll fetch & publication."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up uv
+        if: steps.blackout.outputs.skip != 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python 3.11 & dependencies
+        if: steps.blackout.outputs.skip != 'true'
+        run: |
+          uv python install 3.11
+          uv sync --frozen
+
+      - name: Run full 29-N pipeline
+        if: steps.blackout.outputs.skip != 'true'
+        run: |
+          if [[ "${{ inputs.offline }}" == "true" ]]; then
+            uv run elecciones run-all --offline
+          else
+            uv run elecciones run-all
+          fi
+
+      - name: Commit updated data snapshots and docs dashboard
+        if: steps.blackout.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/polls data/outputs docs/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(data): update 29-N polls, forecast & dashboard [skip ci]"
+            git push
+          else
+            echo "No forecast changes to commit."
+          fi
+
+      - name: Setup GitHub Pages
+        if: steps.blackout.outputs.skip != 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: steps.blackout.outputs.skip != 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        if: steps.blackout.outputs.skip != 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4

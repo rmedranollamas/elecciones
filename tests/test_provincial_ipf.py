@@ -1,0 +1,298 @@
+"""Tests for Milestone 3 Stage 2 52-province IPF, coalition transfers & masks."""
+
+from __future__ import annotations
+
+from datetime import date
+
+import numpy as np
+
+from elecciones.config import BLACKOUT_CUTOFF_DATE_2026, HISTORICAL_ELECTION_DATES, get_polls_dir
+from elecciones.ingest import load_coalition_transfers, load_national_polls, load_regional_polls
+from elecciones.models import (
+    aggregate_kernel,
+    allocate_batch_vectorized,
+    compute_pollster_ratings,
+    project_2026_provinces,
+    project_historical_provinces,
+    run_stage1,
+    split_sumar_2023_share,
+)
+from elecciones.schemas import (
+    SIMPLEX_TOL,
+    RegionalPollRecord,
+    district_simplex_sum,
+    load_parties_catalog,
+)
+
+
+def test_boe_2026_candidacy_mask_and_upn_pp_merger() -> None:
+    polls_26 = load_national_polls(get_polls_dir() / "national_2026.csv")
+    ratings = compute_pollster_ratings()
+    s1 = run_stage1(
+        polls_26,
+        BLACKOUT_CUTOFF_DATE_2026,
+        engine="ensemble",
+        ratings=ratings,
+        compute_cis_sensitivity=False,
+    )
+    proj = project_2026_provinces(
+        s1.mean_shares,
+        BLACKOUT_CUTOFF_DATE_2026,
+        blank_nat=s1.blank_share,
+        ratings=ratings,
+    )
+    parties = load_parties_catalog()
+
+    for cpro, dist in proj.districts.items():
+        for pid in parties.party_ids():
+            m = parties.get(pid).boe_mask_2026[cpro]
+            if m == 0:
+                assert dist.prior_shares[pid] == 0.0
+                assert dist.pre_shrinkage_ipf_shares[pid] == 0.0
+                assert dist.final_shares[pid] == 0.0
+
+        # Exact simplex invariance across all stages
+        assert abs(district_simplex_sum(dist.prior_shares, dist.blank_share) - 1.0) <= SIMPLEX_TOL
+        assert (
+            abs(
+                district_simplex_sum(dist.pre_shrinkage_ipf_shares, dist.pre_shrinkage_blank_share)
+                - 1.0
+            )
+            <= SIMPLEX_TOL
+        )
+        assert abs(district_simplex_sum(dist.final_shares, dist.blank_share) - 1.0) <= SIMPLEX_TOL
+
+    # Unproclaimed parties globally 0
+    for zero_p in ("AC", "CUP", "UPL"):
+        assert proj.post_shrinkage_national[zero_p] == 0.0
+
+    # Navarre UPN+PP unified candidacy & absence of separate PP list
+    nav = proj.districts["31"]
+    assert nav.final_shares["PP"] == 0.0
+    assert nav.final_shares["UPN_PP"] > 0.20
+
+    # Madrid omits UPN_PP / Compromís-FV / ERC / Junts
+    mad = proj.districts["28"]
+    for absent in ("UPN_PP", "COMPROMIS_FV", "ERC", "JUNTS"):
+        assert mad.final_shares[absent] == 0.0
+
+    # Valencian Community routes Sumar -> Compromís-FV (FA absent)
+    val = proj.districts["46"]
+    assert val.final_shares["FA"] == 0.0
+    assert val.final_shares["COMPROMIS_FV"] > 0.05
+
+    # SC Tenerife seeds VOX cleanly despite 0 Congress ballots in 2023
+    tfe = proj.districts["38"]
+    assert tfe.prior_shares["VOX"] > 0.05
+    assert tfe.final_shares["VOX"] > 0.10
+
+
+def test_split_sumar_2023_share_conservation_across_zones() -> None:
+    parties = load_parties_catalog()
+    transfers = load_coalition_transfers()
+
+    zone_samples = [
+        ("46", "10", 0.152),  # Valencia (COMPROMIS_FV)
+        ("35", "05", 0.105),  # Las Palmas (UPC)
+        ("07", "04", 0.165),  # Illes Balears (ARA_MES)
+        ("08", "09", 0.141),  # Barcelona (FA, PODEMOS masked out)
+        ("41", "01", 0.121),  # Sevilla (FA + ADELANTE + PODEMOS)
+        ("44", "02", 0.055),  # Teruel (FA absent -> PODEMOS + TERUEL_EXISTE + PSOE)
+        ("51", "18", 0.025),  # Ceuta (FA absent -> PODEMOS + PSOE)
+        ("52", "19", 0.030),  # Melilla (FA & PODEMOS absent -> PSOE)
+        ("28", "13", 0.155),  # Madrid (general_territory)
+    ]
+    for cpro, codauto, sumar_share in zone_samples:
+        mask_map = {pid: parties.get(pid).boe_mask_2026[cpro] for pid in parties.party_ids()}
+        splits = split_sumar_2023_share(cpro, codauto, sumar_share, mask_map, transfers)
+        assert abs(sum(splits.values()) - sumar_share) < 1e-12
+        for pid, val in splits.items():
+            assert val >= 0.0
+            assert mask_map[pid] == 1
+
+
+def test_ipf_marginals_and_deterministic_350_seat_allocation() -> None:
+    polls_26 = load_national_polls(get_polls_dir() / "national_2026.csv")
+    s1 = run_stage1(
+        polls_26,
+        BLACKOUT_CUTOFF_DATE_2026,
+        engine="kernel",
+        compute_cis_sensitivity=False,
+    )
+    proj = project_2026_provinces(
+        s1.mean_shares,
+        BLACKOUT_CUTOFF_DATE_2026,
+        blank_nat=s1.blank_share,
+    )
+    assert proj.ipf_max_marginal_err < 1e-6
+
+    for party, targ in proj.target_national.items():
+        pre_nat = proj.pre_shrinkage_national[party]
+        assert abs(pre_nat - targ) < 1e-6, f"IPF marginal mismatch for {party}: {pre_nat} vs {targ}"
+
+    # Deterministic mean seats across all 52 districts sum strictly to 350
+    seats_mean = allocate_batch_vectorized(
+        proj.final_matrix[None, :, :],
+        proj.seats_vec,
+        is_autonomous_city=proj.city_vec,
+        blank_votes_or_shares=proj.final_blank[None, :],
+        active_mask=proj.active_mask,
+    )[0]
+    assert int(seats_mean.sum()) == 350
+    assert int(seats_mean[:, proj.party_ids.index("AC")].sum()) == 0
+
+
+def test_regional_poll_as_of_cutoff_prevents_future_leakage() -> None:
+    polls_26 = load_national_polls(get_polls_dir() / "national_2026.csv")
+    s1 = aggregate_kernel(polls_26, date(2026, 11, 16))
+    base_reg = load_regional_polls(get_polls_dir() / "regional_2026.csv")
+
+    future_poll = RegionalPollRecord(
+        scope_type="province",
+        scope_code="28",
+        pollster="40dB",
+        fieldwork_start=date(2026, 11, 19),
+        fieldwork_end=date(2026, 11, 22),
+        sample_size=2800,
+        party_shares={"PP": 0.49, "PSOE": 0.19, "VOX": 0.16, "FA": 0.06},
+    )
+
+    p_no_future = project_2026_provinces(
+        s1.mean_shares,
+        date(2026, 11, 16),
+        blank_nat=s1.blank_share,
+        regional_polls=base_reg,
+    )
+    p_with_future_blocked = project_2026_provinces(
+        s1.mean_shares,
+        date(2026, 11, 16),
+        blank_nat=s1.blank_share,
+        regional_polls=[*base_reg, future_poll],
+    )
+    assert np.allclose(
+        p_no_future.final_matrix, p_with_future_blocked.final_matrix, atol=1e-12
+    )
+
+    p_after_pub = project_2026_provinces(
+        s1.mean_shares,
+        date(2026, 11, 22),
+        blank_nat=s1.blank_share,
+        regional_polls=[*base_reg, future_poll],
+    )
+    assert (
+        p_after_pub.districts["28"].final_shares["PP"]
+        > p_with_future_blocked.districts["28"].final_shares["PP"]
+    )
+
+
+def test_historical_provincial_projection_all_five_cycles() -> None:
+    hist_polls = load_national_polls(get_polls_dir() / "national_2015_2023.csv")
+    for eid, edate in HISTORICAL_ELECTION_DATES.items():
+        as_of = date.fromordinal(edate.toordinal() - 1)
+        epolls = [p for p in hist_polls if p.election_id == eid]
+        s1 = aggregate_kernel(epolls, as_of, election_id=eid, target_election_date=edate)
+        proj = project_historical_provinces(eid, s1.mean_shares, as_of)
+        assert len(proj.districts) == 52
+        assert int(proj.seats_vec.sum()) == 350
+        assert proj.ipf_max_marginal_err < 1e-6
+        for dist in proj.districts.values():
+            simplex = district_simplex_sum(dist.final_shares, dist.blank_share)
+            assert abs(simplex - 1.0) <= SIMPLEX_TOL
+
+
+def test_navarra_split_poll_sums_and_stage2_reanchors_nationwide_totals() -> None:
+    polls_26 = load_national_polls(get_polls_dir() / "national_2026.csv")
+    as_of = date(2026, 11, 16)
+    s1 = run_stage1(polls_26, as_of, engine="ensemble", compute_cis_sensitivity=False)
+
+    # 1. Stage 2 re-anchoring preserves nationwide Stage 1 totals cleanly (<= 0.0005 = 0.05 pp)
+    p_pre = project_2026_provinces(s1.mean_shares, as_of, apply_shrinkage=False)
+    p_post = project_2026_provinces(s1.mean_shares, as_of, apply_shrinkage=True)
+    for party in ("PSOE", "VOX", "FA", "PODEMOS", "SALF", "OTROS"):
+        assert (
+            abs(p_post.post_shrinkage_national[party] - p_pre.pre_shrinkage_national[party])
+            < 5e-4
+        )
+    duo_pre = p_pre.pre_shrinkage_national["PP"] + p_pre.pre_shrinkage_national["UPN_PP"]
+    duo_post = p_post.post_shrinkage_national["PP"] + p_post.post_shrinkage_national["UPN_PP"]
+    assert abs(duo_post - duo_pre) < 5e-4
+
+    # 2. A Navarra poll reporting separate PP + UPN shares MUST sum them (not average to half)
+    split_nav_poll = RegionalPollRecord(
+        scope_type="ccaa",
+        scope_code="15",
+        pollster="Gizaker",
+        fieldwork_start=date(2026, 11, 12),
+        fieldwork_end=date(2026, 11, 15),
+        sample_size=3000,
+        party_shares={"PP": 0.24, "UPN": 0.20, "PSOE": 0.21, "EH_BILDU": 0.16, "VOX": 0.07},
+    )
+    p_split = project_2026_provinces(
+        s1.mean_shares,
+        as_of,
+        regional_polls=[split_nav_poll],
+        cis_prov={},
+    )
+    merged_equiv_poll = RegionalPollRecord(
+        scope_type="ccaa",
+        scope_code="15",
+        pollster="Gizaker",
+        fieldwork_start=date(2026, 11, 12),
+        fieldwork_end=date(2026, 11, 15),
+        sample_size=3000,
+        party_shares={"UPN_PP": 0.44, "PSOE": 0.21, "EH_BILDU": 0.16, "VOX": 0.07},
+    )
+    p_merged = project_2026_provinces(
+        s1.mean_shares,
+        as_of,
+        regional_polls=[merged_equiv_poll],
+        cis_prov={},
+    )
+    assert np.allclose(p_split.final_matrix, p_merged.final_matrix, atol=1e-10)
+
+
+def test_stage2_weight_normalization_aragon_cha_and_madrid_ie_exclusion() -> None:
+    polls_26 = load_national_polls(get_polls_dir() / "national_2026.csv")
+    as_of = date(2026, 11, 16)
+    s1 = run_stage1(polls_26, as_of, engine="ensemble", compute_cis_sensitivity=False)
+
+    # 1. Properly normalized weights keep cis_weight + regional_poll_weight strictly inside [0, 1)
+    proj = project_2026_provinces(s1.mean_shares, as_of)
+    for dist in proj.districts.values():
+        assert 0.0 <= dist.cis_weight < 1.0
+        assert 0.0 <= dist.regional_poll_weight < 1.0
+        assert dist.cis_weight + dist.regional_poll_weight < 1.0
+
+    # 2. Unproclaimed push poll >6% (e.g. Madrid IE) is ignored, whereas Aragón CHA updates Zaragoza
+    ie_push = RegionalPollRecord(
+        scope_type="ccaa",
+        scope_code="13",
+        pollster="TestPoll",
+        fieldwork_start=date(2026, 11, 12),
+        fieldwork_end=date(2026, 11, 15),
+        sample_size=2000,
+        party_shares={"PP": 0.25, "PSOE": 0.45, "VOX": 0.14, "IE": 0.12},
+    )
+    p_base = project_2026_provinces(
+        s1.mean_shares, as_of, regional_polls=[], cis_prov={}
+    )
+    p_push = project_2026_provinces(
+        s1.mean_shares, as_of, regional_polls=[ie_push], cis_prov={}
+    )
+    assert np.allclose(p_base.final_matrix, p_push.final_matrix, atol=1e-12)
+
+    aragon_cha = RegionalPollRecord(
+        scope_type="ccaa",
+        scope_code="02",
+        pollster="TestPoll",
+        fieldwork_start=date(2026, 11, 12),
+        fieldwork_end=date(2026, 11, 15),
+        sample_size=2000,
+        party_shares={"PP": 0.34, "PSOE": 0.25, "VOX": 0.18, "CHA": 0.12},
+    )
+    p_cha = project_2026_provinces(
+        s1.mean_shares, as_of, regional_polls=[aragon_cha], cis_prov={}
+    )
+    assert p_cha.districts["50"].final_shares["FA"] > p_base.districts["50"].final_shares["FA"]
+    assert p_cha.districts["44"].final_shares["FA"] == 0.0
+
