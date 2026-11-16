@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elecciones 29-N 2026 · Predictor Estadístico LOREG Art. 163</title>
+  <style>
+    :root {
+      --bg-paper: #faf9f5;
+      --bg-card: #ffffff;
+      --bg-subtle: #f3f0e8;
+      --ink: #121212;
+      --ink-muted: #57534e;
+      --ink-soft: #78716c;
+      --border: #dfd9ce;
+      --border-strong: #1c1917;
+      --accent: #0055a7;
+      --accent-red: #b91c1c;
+      --accent-green: #15803d;
+      --accent-amber: #b45309;
+      --font-serif: Georgia, "Liberation Serif", "Times New Roman", serif;
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --radius: 6px;
+      --shadow-sm: 0 1px 2px rgba(18, 18, 18, 0.05);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg-paper);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      line-height: 1.48;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .tabular { font-variant-numeric: tabular-nums; }
+    .serif { font-family: var(--font-serif); }
+    .muted { color: var(--ink-muted); }
+    .mono { font-family: var(--font-mono); }
+
+    /* Top Editorial Masthead */
+    .masthead {
+      background: var(--bg-card);
+      border-bottom: 2px solid var(--border-strong);
+      padding: 18px 20px 14px;
+    }
+    .masthead-inner, .container, .nav-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+    .masthead-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--ink-muted);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .masthead-badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--ink);
+    }
+    .badge-ok { background: #dcfce7; border-color: #86efac; color: #166534; }
+    .badge-blackout { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+    .badge-counterfactual { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+
+    .masthead-main {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+    .masthead h1 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: clamp(1.65rem, 3vw, 2.35rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.12;
+    }
+    .masthead-sub {
+      margin: 6px 0 0;
+      font-size: 0.96rem;
+      color: var(--ink-muted);
+      max-width: 720px;
+    }
+
+    /* Controls strip */
+    .control-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .seg-group {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-subtle);
+      padding: 2px;
+      gap: 2px;
+    }
+    .seg-btn {
+      border: 0;
+      background: transparent;
+      color: var(--ink-muted);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .seg-btn:hover { color: var(--ink); }
+    .seg-btn.active {
+      background: var(--border-strong);
+      color: #ffffff;
+    }
+
+    /* Sticky Subnav */
+    .subnav {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(250, 249, 245, 0.96);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 20px;
+    }
+    .nav-inner {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-inner::-webkit-scrollbar { display: none; }
+    .nav-inner a {
+      text-decoration: none;
+      color: var(--ink-muted);
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 3px 0;
+      border-bottom: 2px solid transparent;
+    }
+    .nav-inner a:hover { color: var(--ink); border-bottom-color: var(--border-strong); }
+
+    .container { padding: 20px 20px 56px; }
+    section { margin-top: 26px; }
+
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      border-top: 2px solid var(--border-strong);
+      padding-top: 10px;
+      margin-bottom: 14px;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 1.38rem;
+      font-weight: 700;
+    }
+    .section-head p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--ink-muted);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-title {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+    }
+
+    /* Hero KPI grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-muted);
+      font-weight: 700;
+    }
+    .kpi-val {
+      font-family: var(--font-serif);
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 4px 0 2px;
+      line-height: 1.1;
+    }
+    .kpi-sub { font-size: 12px; color: var(--ink-muted); }
+
+    .notice-banner {
+      display: none;
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      color: #78350f;
+      font-size: 13px;
+    }
+    .notice-banner.visible { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .grid-2-eq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 980px) {
+      .grid-2, .grid-2-eq { grid-template-columns: 1fr; }
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+      font-weight: 700;
+      background: var(--bg-subtle);
+      white-space: nowrap;
+    }
+    th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: var(--ink); }
+    tr:last-child td { border-bottom: 0; }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover td { background: #f8f6f0; }
+
+    .party-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,0.12);
+    }
+
+    /* Spark range bar */
+    .range-track {
+      position: relative;
+      height: 8px;
+      background: #ece8df;
+      border-radius: 999px;
+      width: 84px;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 6px;
+    }
+    .range-band {
+      position: absolute;
+      top: 1px;
+      bottom: 1px;
+      border-radius: 999px;
+      opacity: 0.35;
+    }
+    .range-mid {
+      position: absolute;
+      top: -1px;
+      bottom: -1px;
+      width: 3px;
+      border-radius: 2px;
+    }
+
+    /* Hemicycle */
+    .svg-box { position: relative; width: 100%; }
+    .svg-box svg { width: 100%; height: auto; display: block; }
+    .majority-bar {
+      margin-top: 8px;
+      height: 12px;
+      background: #ece8df;
+      border-radius: 999px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+    }
+    .majority-mid {
+      position: relative;
+      height: 18px;
+      margin-top: -15px;
+      pointer-events: none;
+    }
+    .majority-mid-line {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border-strong);
+    }
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--ink-muted);
+      margin-top: 8px;
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+
+    /* Cartogram */
+    .cartogram-grid {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .tile {
+      border-radius: 5px;
+      padding: 5px 4px;
+      min-height: 52px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s, border-color 0.12s, box-shadow 0.12s;
+      user-select: none;
+      overflow: hidden;
+    }
+    .tile:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.16); }
+    .tile.selected { border-color: #111827; box-shadow: 0 0 0 2px #faf9f5 inset, 0 4px 10px rgba(0,0,0,0.22); }
+    .tile-name { font-size: 10px; font-weight: 700; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tile-bottom { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; margin-top: 3px; }
+    .tile-seats { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .tile-tag { font-size: 9.5px; font-weight: 700; opacity: 0.92; font-variant-numeric: tabular-nums; }
+    @media (max-width: 720px) {
+      .cartogram-grid { gap: 3px; }
+      .tile { min-height: 40px; padding: 3px; }
+      .tile-name { font-size: 8.5px; }
+      .tile-seats { font-size: 10px; }
+      .tile-tag { display: none; }
+    }
+
+    /* Quotient bars */
+    .q-row { display: grid; grid-template-columns: 78px 1fr 70px; gap: 8px; align-items: center; margin: 4px 0; font-size: 12px; }
+    .q-track { height: 14px; background: #f1eee7; border-radius: 3px; position: relative; overflow: hidden; }
+    .q-fill { height: 100%; border-radius: 3px; }
+    .q-won { opacity: 0.95; }
+    .q-lost { opacity: 0.35; background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.45) 4px, rgba(255,255,255,0.45) 8px); }
+
+    /* Tooltip */
+    .chart-tooltip {
+      position: fixed;
+      z-index: 100;
+      pointer-events: none;
+      background: rgba(18, 18, 18, 0.94);
+      color: #ffffff;
+      border-radius: 6px;
+      padding: 8px 11px;
+      font-size: 12px;
+      line-height: 1.38;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      max-width: 280px;
+      display: none;
+    }
+
+    /* Trend legend toggles */
+    .chip-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .party-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg-card);
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .party-toggle.off { opacity: 0.42; background: var(--bg-subtle); }
+
+    /* What-if sliders & Pact 3-state */
+    .slider-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 10px 14px;
+    }
+    .slider-item {
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 8px 10px;
+      background: #fcfbf8;
+    }
+    .slider-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .slider-item input[type="range"] { width: 100%; accent-color: var(--border-strong); cursor: pointer; }
+
+    .pact-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      gap: 8px;
+    }
+    .pact-row:last-child { border-bottom: 0; }
+    .tri-pill {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .tri-btn {
+      border: 0;
+      background: #ffffff;
+      color: var(--ink-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+    .tri-btn.yes.active { background: #15803d; color: #fff; }
+    .tri-btn.abs.active { background: #d97706; color: #fff; }
+    .tri-btn.no.active { background: #b91c1c; color: #fff; }
+
+    .btn-outline {
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card);
+      color: var(--ink);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-outline:hover { background: var(--bg-subtle); }
+
+    .grade-pill {
+      display: inline-block;
+      min-width: 22px;
+      text-align: center;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .grade-A { background: #dcfce7; color: #166534; }
+    .grade-B { background: #dbeafe; color: #1e40af; }
+    .grade-C { background: #fee2e2; color: #991b1b; }
+
+    .search-box {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: var(--font-sans);
+      min-width: 220px;
+    }
+
+    footer {
+      border-top: 2px solid var(--border-strong);
+      padding: 20px;
+      margin-top: 32px;
+      font-size: 12.5px;
+      color: var(--ink-muted);
+      background: var(--bg-card);
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="masthead-top">
+        <div class="masthead-badges">
+          <span>ESPAÑA · ELECCIONES GENERALES 29-N (2026)</span>
+          <span class="badge">Cortes {{ metadata.as_of_date }}</span>
+          <span class="badge">52 circunscripciones · 350 escaños</span>
+          <span class="badge">{{ "{:,}".format(metadata.n_sims).replace(",", ".") }} simulaciones ({{ metadata.simulation_runtime_ms }} ms)</span>
+        </div>
+        <div class="masthead-badges">
+          {% if metadata.blackout_active or metadata.live_blackout_active %}
+          <span class="badge badge-blackout">Veda Electoral Art. 69.7 LOREG activa</span>
+          {% else %}
+          <span class="badge badge-ok">Ventana pre-veda activa (hasta 23-N)</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="masthead-main">
+        <div>
+          <h1>Radiografía probabilística del Congreso 29-N</h1>
+          <p class="masthead-sub">
+            Modelo jerárquico bayesiano-frecuentista calibrado fuera de muestra (2015–2023) con desagregación provincial IPF bajo candidatura oficial del BOE, D'Hondt exacto LOREG Art. 163 y simulación de investidura Art. 99 CE.
+          </p>
+        </div>
+        <div class="control-bar" aria-label="Controles de modelo">
+          <div>
+            <div style="font-size:10.5px;font-weight:700;color:var(--ink-muted);margin-bottom:3px;text-transform:uppercase;">Motor Etapa 1</div>
+            <div class="seg-group" id="engine-toggle">
+              <button class="seg-btn active" data-engine="ensemble">Ensemble</button>
+              <button class="seg-btn" data-engine="kernel">Kernel</button>
+              <button class="seg-btn" data-engine="state_space">Espacio-Estado</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10.5px;font-weight:700;color:var(--ink-muted);margin-bottom:3px;text-transform:uppercase;">Sensibilidad CIS</div>
+            <div class="seg-group" id="cis-toggle">
+              <button class="seg-btn active" data-cis="with">Con CIS</button>
+              <button class="seg-btn" data-cis="without">Sin CIS</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="subnav" aria-label="Navegación de secciones">
+    <div class="nav-inner">
+      <a href="#sec-resumen">Resumen y Hemiciclo</a>
+      <a href="#sec-cartograma">Mapa Provincial &amp; D'Hondt</a>
+      <a href="#sec-tendencia">Tendencia de Encuestas</a>
+      <a href="#sec-whatif">Simulador "What-If" &amp; Art. 99</a>
+      <a href="#sec-encuestadoras">Encuestadoras &amp; Sesgos</a>
+      <a href="#sec-backtest">Validación Histórica (LOOCV)</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div id="mode-notice" class="notice-banner" role="status">
+      <span id="mode-notice-text"></span>
+      <button class="btn-outline" id="btn-reset-mode" type="button">Volver al escenario Monte Carlo base</button>
+    </div>
+
+    <!-- SECTION 1: HERO KPIs & HEMICYCLE -->
+    <section id="sec-resumen">
+      <div class="kpi-grid" id="hero-kpis">
+        {% for p in top_parties[:3] %}
+        <div class="kpi-card">
+          <div class="kpi-label">{{ p.short_name }} (Media simulada)</div>
+          <div class="kpi-val tabular">{{ p.median }} escaños</div>
+          <div class="kpi-sub tabular">{{ p.vote_pct }}% voto · 80%: {{ p.p10 }}–{{ p.p90 }}</div>
+        </div>
+        {% endfor %}
+        <div class="kpi-card">
+          <div class="kpi-label">PP + Vox (&ge; 176) · Bloqueo Art. 99.5</div>
+          <div class="kpi-val tabular">{{ "%.1f"|format(investiture.first_ballot.pp_vox.prob * 100) if investiture.first_ballot.pp_vox else "—" }}%</div>
+          <div class="kpi-sub tabular">Bloqueo institucional: {{ "%.1f"|format(investiture.deadlock_prob * 100) }}%</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 class="card-title">Hemiciclo del Congreso (350 escaños · Mayoría 176)</h3>
+          <div class="svg-box" id="hemicycle-box">
+            <svg id="hemicycle-svg" viewBox="0 0 760 405" role="img" aria-label="Hemiciclo de 350 escaños del Congreso de los Diputados"></svg>
+          </div>
+          <div class="majority-bar" id="majority-bar" title="Distribución izquierda-derecha (línea central = 176 escaños)"></div>
+          <div class="majority-mid"><div class="majority-mid-line"></div></div>
+          <div class="legend-row" style="justify-content:space-between;margin-top:4px;">
+            <span class="legend-item">← Mayoría izquierda/plurinacional</span>
+            <span class="legend-item"><strong>176 mayoría absoluta</strong></span>
+            <span class="legend-item">Mayoría derecha →</span>
+          </div>
+          <div class="legend-row" id="tier-legend">
+            <span class="legend-item"><span class="dot" style="background:#374151;"></span> Seguro (&ge;99%): <strong id="t-seg">{{ tier_totals.seguros }}</strong></span>
+            <span class="legend-item"><span class="dot" style="background:#374151;opacity:0.65;"></span> Probable (75–99%): <strong id="t-prob">{{ tier_totals.probables }}</strong></span>
+            <span class="legend-item"><span class="dot" style="background:#fff;border:2px solid #374151;"></span> En juego (25–75%): <strong id="t-juego">{{ tier_totals.en_juego }}</strong></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;">
+            <h3 class="card-title" style="margin-bottom:8px;">Proyección Nacional de Votos y Escaños</h3>
+            <span class="muted tabular" style="font-size:12px;" id="nat-table-subtitle">Monte Carlo 50.000 tiradas</span>
+          </div>
+          <div class="table-wrap">
+            <table id="national-table">
+              <thead>
+                <tr>
+                  <th>Partido</th>
+                  <th class="num">Voto % (P10–P90)</th>
+                  <th class="num">Media</th>
+                  <th class="num">Rango 80%</th>
+                  <th class="num">Seg</th>
+                  <th class="num">Prob</th>
+                  <th class="num">Jue</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;" id="cis-diff-strip"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: 52-PROVINCE CARTOGRAM & LOREG D'HONDT INSPECTOR -->
+    <section id="sec-cartograma">
+      <div class="section-head">
+        <h2>Mapa de las 52 Circunscripciones &amp; Inspector LOREG Art. 163</h2>
+        <div class="seg-group" id="map-mode-toggle">
+          <button class="seg-btn active" data-mapmode="winner">Ganador</button>
+          <button class="seg-btn" data-mapmode="margin">Margen último escaño</button>
+          <button class="seg-btn" data-mapmode="en_juego">Escaños en juego</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <h3 class="card-title" style="margin:0;">Cartograma proporcional de Congreso (haz clic en una provincia)</h3>
+            <span class="muted" style="font-size:11.5px;">Madrid 38 · Barcelona 32 · Valencia 16 · Cádiz 8</span>
+          </div>
+          <div class="cartogram-grid" id="cartogram-grid"></div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <h3 class="card-title">Escaños más reñidos (Top 8 circunscripciones)</h3>
+            <div class="table-wrap">
+              <table id="battlegrounds-table">
+                <thead>
+                  <tr>
+                    <th>Provincia</th>
+                    <th class="num">Esc.</th>
+                    <th>Titular</th>
+                    <th>Aspirante</th>
+                    <th class="num">Margen %</th>
+                    <th class="num">~Votos</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="district-inspector">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px;">
+            <div>
+              <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;" id="insp-ccaa">—</div>
+              <h3 style="margin:2px 0 0;font-family:var(--font-serif);font-size:1.35rem;" id="insp-title">Madrid (28)</h3>
+            </div>
+            <div class="tabular" style="text-align:right;font-size:12.5px;" id="insp-meta">—</div>
+          </div>
+
+          <div id="insp-battle-box" style="background:var(--bg-subtle);border-radius:5px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;"></div>
+
+          <div class="table-wrap">
+            <table id="insp-party-table">
+              <thead>
+                <tr>
+                  <th>Candidatura</th>
+                  <th class="num">Voto % (P10–P90)</th>
+                  <th class="num">Media</th>
+                  <th class="num">P10–P90</th>
+                  <th class="num">Seg / Prob / Jue</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
+            <h4 class="card-title" style="font-size:11.5px;margin-bottom:6px;">Cocientes D'Hondt y cifra de reparto (voto esperado)</h4>
+            <div id="insp-quotients"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: 100-DAY POLLING TREND -->
+    <section id="sec-tendencia">
+      <div class="section-head">
+        <h2>Evolución de Encuestas Nacionales (últimos 100 días)</h2>
+        <p>Bandas smoothed (P10–P90) y sondeos individuales (rombos = CIS, círculos = resto de casas)</p>
+      </div>
+      <div class="card">
+        <div class="chip-toggles" id="trend-toggles"></div>
+        <div class="svg-box">
+          <svg id="trend-svg" viewBox="0 0 920 330" role="img" aria-label="Gráfico de tendencia electoral"></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: WHAT-IF SWING & ART. 99 INVESTITURE SIMULATOR -->
+    <section id="sec-whatif">
+      <div class="section-head">
+        <h2>Simulador Interactivo "What-If" (52 Provincias LOREG) &amp; Pactómetro Art. 99 CE</h2>
+        <button class="btn-outline" id="btn-reset-sliders" type="button">Restablecer escenario base</button>
+      </div>
+
+      <div class="grid-2-eq">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <h3 class="card-title" style="margin:0;">Desplazamiento nacional de voto (&Delta; pp)</h3>
+            <span class="muted tabular" style="font-size:12px;" id="whatif-summary">Escenario base intacto</span>
+          </div>
+          <div class="slider-grid" id="whatif-sliders"></div>
+          <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
+            <h4 class="card-title" style="font-size:11.5px;">Reparto LOREG Art. 163 en vivo (escenario simulado vs base)</h4>
+            <div class="table-wrap">
+              <table id="whatif-table">
+                <thead>
+                  <tr>
+                    <th>Partido</th>
+                    <th class="num">Voto Base</th>
+                    <th class="num">Voto Sim.</th>
+                    <th class="num">Esc. Sim.</th>
+                    <th class="num">Diferencia</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Constructor de Investidura Art. 99 CE (1.ª y 2.ª Vuelta)</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;" id="pact-presets">
+            <button class="btn-outline" data-preset="pp_vox" type="button">PP + Vox</button>
+            <button class="btn-outline" data-preset="pp_minority" type="button">PP minoría (abst. Vox/PNV)</button>
+            <button class="btn-outline" data-preset="prog_sin_junts" type="button">PSOE + FA + Socios (abst. Junts)</button>
+            <button class="btn-outline" data-preset="plurinacional" type="button">Bloque Plurinacional</button>
+            <button class="btn-outline" data-preset="gran_coalicion" type="button">Gran Coalición</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px;" id="custom-pact-result"></div>
+
+          <div id="pact-builder-rows" style="max-height:280px;overflow-y:auto;padding-right:4px;border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:14px;"></div>
+
+          <h4 class="card-title" style="font-size:11.5px;margin-bottom:6px;">Escenarios Monte Carlo precalculados (50.000 tiradas)</h4>
+          <div class="table-wrap">
+            <table id="investiture-mc-table">
+              <thead>
+                <tr>
+                  <th>Votación</th>
+                  <th>Escenario</th>
+                  <th class="num">Prob.</th>
+                  <th class="num">Mediana</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: POLLSTER ACCURACY & HOUSE EFFECTS -->
+    <section id="sec-encuestadoras">
+      <div class="section-head">
+        <h2>Índice de Precisión y Sesgos de Casa ("House Effects")</h2>
+        <input class="search-box" id="pollster-search" type="search" placeholder="Filtrar encuestadora…" aria-label="Filtrar encuestadora" />
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table id="pollster-table">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="pollster">Encuestadora ↕</th>
+                <th class="sortable" data-sort="grade">Grado ↕</th>
+                <th class="num sortable" data-sort="n_elections">Elecc. ↕</th>
+                <th class="num sortable" data-sort="n_polls_2026">2026 ↕</th>
+                <th class="num sortable" data-sort="shrunk_mae">MAE enc. ↕</th>
+                <th class="num sortable" data-sort="herding_ratio">Herding ↕</th>
+                <th class="num sortable" data-sort="delta_PP">&Delta;PP ↕</th>
+                <th class="num sortable" data-sort="delta_PSOE">&Delta;PSOE ↕</th>
+                <th class="num sortable" data-sort="delta_VOX">&Delta;VOX ↕</th>
+                <th class="num sortable" data-sort="delta_FA">&Delta;FA ↕</th>
+                <th class="num sortable" data-sort="delta_PODEMOS">&Delta;PODEMOS ↕</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: OUT-OF-SAMPLE LOOCV BACKTEST DIAGNOSTICS -->
+    <section id="sec-backtest">
+      <div class="section-head">
+        <h2>Validación Fuera de Muestra LOOCV (2015-D a 2023-J)</h2>
+        <div class="seg-group" id="bt-horizon-toggle">
+          <button class="seg-btn active" data-hor="global">Global</button>
+          <button class="seg-btn" data-hor="T-15d">T-15d</button>
+          <button class="seg-btn" data-hor="T-6d">T-6d</button>
+          <button class="seg-btn" data-hor="T-1d">T-1d</button>
+        </div>
+      </div>
+
+      <div id="backtest-container">
+        {% if not has_backtest %}
+        <div class="card"><p class="muted" style="margin:0;">No se encontró <code>backtest_summary.json</code>. Ejecuta <code>elecciones backtest</code> para generar métricas de calibración.</p></div>
+        {% else %}
+        <div class="grid-2-eq">
+          <div class="card">
+            <h3 class="card-title">Comparativa de Motores (260 carreras provinciales · 1.750 escaños)</h3>
+            <div class="table-wrap">
+              <table id="bt-models-table">
+                <thead>
+                  <tr>
+                    <th>Motor</th>
+                    <th class="num">MAE Voto (pp)</th>
+                    <th class="num">MAE Esc. Prov</th>
+                    <th class="num">MAE Esc. Nac</th>
+                    <th class="num">Brier</th>
+                    <th class="num">Cov 80% P/N</th>
+                    <th class="num">Cov 95% P/N</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;" id="bt-cal-params"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Calibración Empírica por Niveles de Certidumbre</h3>
+            <div id="bt-tiers-bars"></div>
+            <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
+              <h4 class="card-title" style="font-size:11.5px;margin-bottom:6px;">Error fuera de muestra por convocatoria histórica</h4>
+              <div class="table-wrap">
+                <table id="bt-elections-table">
+                  <thead>
+                    <tr>
+                      <th>Elección</th>
+                      <th class="num">MAE Voto</th>
+                      <th class="num">MAE Esc. Prov</th>
+                      <th class="num">MAE Esc. Nac</th>
+                      <th class="num">Brier</th>
+                      <th class="num">Cov 80% / 95%</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="masthead-inner" style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;">
+      <div>
+        <strong>elecciones 29-N</strong> · Generado sin dependencias externas el {{ metadata.generated_at }} (corte de datos {{ metadata.as_of_date }}).
+        Regla LOREG Art. 163 (barrera 3% incluyendo voto en blanco; Ceuta y Melilla mayoría simple) &amp; Art. 69.7 veda demoscópica (24–29 nov 2026 CET).
+      </div>
+      <div class="mono">Seed: {{ metadata.seed }} · Engine: {{ metadata.engine }}</div>
+    </div>
+  </footer>
+
+  <div class="chart-tooltip" id="tooltip"></div>
+
+  <script id="elecciones-data" type="application/json">{{ payload_json | safe }}</script>
+  <script>
+    (function () {
+      "use strict";
+
+      const DATA = JSON.parse(document.getElementById("elecciones-data").textContent);
+      const PARTY_META = DATA.national.party_meta || {};
+      const CONST_META = DATA.national.constituency_meta || {};
+      const STAGE1_CMP = DATA.national.stage1_comparison || {};
+      const CIS_SENS = DATA.national.cis_sensitivity || {};
+
+      const RIGHT_PARTIES = new Set(["PP", "UPN_PP", "VOX", "SALF", "AC"]);
+      const LEFT_PARTIES = new Set(["PSOE", "FA", "PODEMOS", "COMPROMIS_FV", "UPC", "ARA_MES", "ADELANTE", "ERC", "EH_BILDU", "BNG"]);
+      const HEMICYCLE_ORDER = [
+        "ADELANTE", "PODEMOS", "EH_BILDU", "FA", "COMPROMIS_FV", "ARA_MES", "UPC",
+        "BNG", "ERC", "PSOE", "TERUEL_EXISTE", "SORIA_YA", "GEROA_BAI",
+        "PACMA", "FO", "ALHORA", "OTROS", "PNV", "JUNTS", "CCA", "UPN_PP", "PP", "VOX", "SALF", "AC", "CUP", "UPL"
+      ];
+
+      const STATE = {
+        engine: DATA.metadata.engine || "ensemble",
+        cis: DATA.metadata.exclude_cis_headline ? "without" : "with",
+        mapMode: "winner",
+        selectedCpro: "26",
+        hiddenTrendParties: new Set(),
+        pollsterFilter: "",
+        pollsterSortKey: "shrunk_mae",
+        pollsterSortAsc: true,
+        btHorizon: "global",
+        swings: {},
+        pactVotes: {
+          PP: "yes", UPN_PP: "yes", VOX: "yes", CCA: "abs", SALF: "no",
+          PSOE: "no", FA: "no", PODEMOS: "no", ERC: "no", JUNTS: "no",
+          PNV: "no", EH_BILDU: "no", BNG: "no", COMPROMIS_FV: "no", ADELANTE: "no", UPC: "no", OTROS: "no"
+        }
+      };
+
+      const BASE_ENGINE = DATA.metadata.engine || "ensemble";
+      const BASE_CIS = DATA.metadata.exclude_cis_headline ? "without" : "with";
+      const SLIDER_PARTIES = ["PP", "PSOE", "VOX", "FA", "PODEMOS", "SALF", "COMPROMIS_FV", "ADELANTE", "ERC", "JUNTS", "PNV", "EH_BILDU"];
+      SLIDER_PARTIES.forEach(p => { STATE.swings[p] = 0.0; });
+
+      // If La Rioja not in top battlegrounds, default to top battleground
+      if (DATA.battlegrounds && DATA.battlegrounds.length > 0) {
+        STATE.selectedCpro = DATA.battlegrounds[0].cpro;
+      } else {
+        STATE.selectedCpro = "28";
+      }
+
+      const tooltip = document.getElementById("tooltip");
+      function showTip(evt, html) {
+        tooltip.innerHTML = html;
+        tooltip.style.display = "block";
+        const x = Math.min(window.innerWidth - 295, evt.clientX + 14);
+        const y = Math.min(window.innerHeight - 120, evt.clientY + 14);
+        tooltip.style.left = Math.max(8, x) + "px";
+        tooltip.style.top = Math.max(8, y) + "px";
+      }
+      function hideTip() { tooltip.style.display = "none"; }
+
+      function esc(str) {
+        return String(str == null ? "" : str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+      function pMeta(pid) {
+        return PARTY_META[pid] || { short_name: pid, name: pid, color: "#64748B", bloc: "other" };
+      }
+      function pColor(pid) { return pMeta(pid).color || "#64748B"; }
+      function pShort(pid) { return pMeta(pid).short_name || pid; }
+      function contrastInk(hex) {
+        const h = (hex || "#64748B").replace("#", "");
+        if (h.length !== 6) return "#FFFFFF";
+        const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 158 ? "#111827" : "#FFFFFF";
+      }
+      function fmtPct(unitVal, digits = 1) { return (Number(unitVal || 0) * 100).toFixed(digits) + "%"; }
+      function fmtNum(val, digits = 1) { return Number(val || 0).toFixed(digits); }
+      function fmtInt(val) { return Math.round(Number(val || 0)).toLocaleString("es-ES"); }
+
+      // LOREG Art. 163 exact client-side D'Hondt solver (provincial 3% over valid incl. blank; Ceuta/Melilla plurality)
+      function allocateDistrictDhondt(seats, partyVotesObj, blankVotes, isCity) {
+        let valid = Number(blankVotes || 0);
+        const entries = [];
+        for (const [p, vRaw] of Object.entries(partyVotesObj)) {
+          const v = Number(vRaw || 0);
+          if (v > 0) {
+            valid += v;
+            entries.push([p, v]);
+          }
+        }
+        const alloc = {};
+        if (valid <= 0 || entries.length === 0) return alloc;
+        const elig = entries.filter(([, v]) => (isCity ? v > 0 : (v / valid) >= 0.03));
+        if (elig.length === 0) return alloc;
+        if (isCity) {
+          elig.sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]));
+          alloc[elig[0][0]] = seats;
+          return alloc;
+        }
+        for (const [p] of elig) alloc[p] = 0;
+        for (let k = 0; k < seats; k++) {
+          let bestP = elig[0][0];
+          let bestQ = -1;
+          let bestV = -1;
+          for (const [p, v] of elig) {
+            const q = v / (alloc[p] + 1);
+            if (q > bestQ || (q === bestQ && v > bestV)) {
+              bestQ = q;
+              bestV = v;
+              bestP = p;
+            }
+          }
+          alloc[bestP] += 1;
+        }
+        return alloc;
+      }
+
+      // Apply national vote-share multiplier shift cleanly onto masked 52 districts & run D'Hondt
+      function solveShiftedChamber(multipliers) {
+        const natSeats = {};
+        const natVotes = {};
+        let totValid = 0;
+        const distResults = [];
+
+        for (const con of DATA.constituencies) {
+          const isCity = con.cpro === "51" || con.cpro === "52";
+          const candRaw = {};
+          let candSum = 0;
+          for (const [p, s] of Object.entries(con.final_shares)) {
+            if (s <= 0) continue;
+            const mult = multipliers[p] !== undefined ? multipliers[p] : 1.0;
+            const adj = Math.max(0.0001, s * mult);
+            candRaw[p] = adj;
+            candSum += adj;
+          }
+          const targetSum = Math.max(0.85, 1.0 - con.blank_share);
+          const normShares = {};
+          for (const [p, adj] of Object.entries(candRaw)) {
+            normShares[p] = candSum > 0 ? (adj / candSum) * targetSum : 0;
+          }
+          const dSeats = allocateDistrictDhondt(con.seats_2026, normShares, con.blank_share, isCity);
+          const w = con.validos_prior || 100000;
+          totValid += w;
+          for (const [p, s] of Object.entries(normShares)) {
+            natVotes[p] = (natVotes[p] || 0) + s * w;
+          }
+          for (const [p, sc] of Object.entries(dSeats)) {
+            natSeats[p] = (natSeats[p] || 0) + sc;
+          }
+          distResults.push({ cpro: con.cpro, seats: dSeats, shares: normShares });
+        }
+        const natShares = {};
+        for (const [p, vw] of Object.entries(natVotes)) {
+          natShares[p] = totValid > 0 ? vw / totValid : 0;
+        }
+        return { natSeats, natShares, distResults };
+      }
+
+      function computeEngineCisMultipliers() {
+        const mult = {};
+        const baseStage = STAGE1_CMP[BASE_ENGINE] || { mean_shares: {} };
+        const curStage = STAGE1_CMP[STATE.engine] || baseStage;
+        const engShares = curStage.mean_shares || {};
+        const baseEngShares = baseStage.mean_shares || {};
+
+        const cisBase = CIS_SENS[BASE_CIS === "without" ? "without_cis" : "with_cis"] || { mean_shares: {} };
+        const cisCur = CIS_SENS[STATE.cis === "without" ? "without_cis" : "with_cis"] || cisBase;
+
+        for (const pid of DATA.party_order) {
+          const bE = Number(baseEngShares[pid] || 0);
+          const cE = Number(engShares[pid] || bE);
+          const rE = bE > 0.002 ? cE / bE : 1.0;
+
+          const bC = Number((cisBase.mean_shares || {})[pid] || 0);
+          const cC = Number((cisCur.mean_shares || {})[pid] || bC);
+          const rC = bC > 0.002 ? cC / bC : 1.0;
+
+          mult[pid] = Math.max(0.25, Math.min(3.0, rE * rC));
+        }
+        return mult;
+      }
+
+      function isCounterfactualMode() {
+        return STATE.engine !== BASE_ENGINE || STATE.cis !== BASE_CIS;
+      }
+
+      // Largest-remainder rounding of expected seats summing strictly to 350 for Hemicycle
+      function hamiltonSeats350(seatEntries) {
+        const floors = seatEntries.map(([p, mean]) => ({
+          p,
+          base: Math.floor(mean),
+          rem: mean - Math.floor(mean),
+        }));
+        let remSeats = 350 - floors.reduce((a, b) => a + b.base, 0);
+        const byRem = [...floors].sort((a, b) => b.rem - a.rem || a.p.localeCompare(b.p));
+        let idx = 0;
+        while (remSeats > 0 && idx < byRem.length) {
+          byRem[idx].base += 1;
+          remSeats -= 1;
+          idx += 1;
+        }
+        const out = {};
+        floors.forEach(item => { out[item.p] = item.base; });
+        return out;
+      }
+
+      // Build fixed 350 hemicycle coordinates across 7 concentric arcs
+      const HEMI_COORDS = (function () {
+        const counts = [33, 39, 45, 51, 56, 61, 65];
+        const radii = [126, 154, 182, 210, 238, 266, 294];
+        const cx = 380, cy = 368;
+        const pts = [];
+        for (let row = 0; row < counts.length; row++) {
+          const n = counts[row];
+          const r = radii[row];
+          for (let i = 0; i < n; i++) {
+            const theta = n > 1 ? Math.PI - (Math.PI * i) / (n - 1) : Math.PI / 2;
+            pts.push({
+              x: cx + r * Math.cos(theta),
+              y: cy - r * Math.sin(theta),
+              theta,
+              row,
+            });
+          }
+        }
+        pts.sort((a, b) => b.theta - a.theta || a.row - b.row);
+        return pts;
+      })();
+
+      function renderHemicycleAndNational() {
+        const cf = isCounterfactualMode();
+        const noticeEl = document.getElementById("mode-notice");
+        const noticeText = document.getElementById("mode-notice-text");
+        if (cf) {
+          noticeText.innerHTML =
+            `<strong>Vista contrafactual activa</strong> (${esc(STATE.engine.toUpperCase())}, ${STATE.cis === "with" ? "Con CIS" : "Sin CIS"}): los escaños se recalculan al instante aplicando la regla D'Hondt sobre las 52 circunscripciones a partir de la desviación de Etapa 1.`;
+          noticeEl.classList.add("visible");
+        } else {
+          noticeEl.classList.remove("visible");
+        }
+
+        const seatsMap = DATA.national.seats;
+        const vsMap = DATA.national.vote_shares;
+        let displayRows = [];
+        let tierSums = { seg: 0, prob: 0, jue: 0 };
+
+        if (!cf) {
+          for (const pid of DATA.party_order) {
+            const sObj = seatsMap[pid];
+            const vs = vsMap[pid];
+            if (!sObj || (sObj.p95 === 0 && vs.mean < 0.004)) continue;
+            tierSums.seg += sObj.seguros;
+            tierSums.prob += sObj.probables;
+            tierSums.jue += sObj.en_juego;
+            displayRows.push({
+              pid,
+              vsMean: vs.mean,
+              vsP10: vs.p10,
+              vsP90: vs.p90,
+              sMean: sObj.mean,
+              sMed: sObj.median,
+              sP10: sObj.p10,
+              sP90: sObj.p90,
+              seg: sObj.seguros,
+              prob: sObj.probables,
+              jue: sObj.en_juego,
+            });
+          }
+          document.getElementById("nat-table-subtitle").textContent =
+            `Monte Carlo ${fmtInt(DATA.metadata.n_sims)} tiradas · ${DATA.metadata.engine}`;
+        } else {
+          const mult = computeEngineCisMultipliers();
+          const solved = solveShiftedChamber(mult);
+          for (const pid of DATA.party_order) {
+            const sh = solved.natShares[pid] || 0;
+            const sc = solved.natSeats[pid] || 0;
+            if (sc === 0 && sh < 0.004) continue;
+            tierSums.seg += sc;
+            displayRows.push({
+              pid,
+              vsMean: sh,
+              vsP10: sh,
+              vsP90: sh,
+              sMean: sc,
+              sMed: sc,
+              sP10: sc,
+              sP90: sc,
+              seg: sc,
+              prob: 0,
+              jue: 0,
+            });
+          }
+          displayRows.sort((a, b) => b.sMean - a.sMean || b.vsMean - a.vsMean);
+          document.getElementById("nat-table-subtitle").textContent =
+            `Reparto D'Hondt determinista (${STATE.engine}, ${STATE.cis === "with" ? "con CIS" : "sin CIS"})`;
+        }
+
+        document.getElementById("t-seg").textContent = tierSums.seg;
+        document.getElementById("t-prob").textContent = tierSums.prob;
+        document.getElementById("t-juego").textContent = tierSums.jue;
+
+        // National table body
+        const tbody = document.querySelector("#national-table tbody");
+        const maxVs = Math.max(0.35, ...displayRows.map(r => r.vsP90));
+        tbody.innerHTML = displayRows.map(r => {
+          const col = pColor(r.pid);
+          const lPct = Math.min(100, (r.vsP10 / maxVs) * 100);
+          const wPct = Math.max(3, Math.min(100 - lPct, ((r.vsP90 - r.vsP10) / maxVs) * 100));
+          const mPct = Math.min(98, (r.vsMean / maxVs) * 100);
+          return `
+            <tr>
+              <td><span class="party-chip"><span class="dot" style="background:${col}"></span>${esc(pShort(r.pid))}</span></td>
+              <td class="num">
+                <strong>${fmtPct(r.vsMean, 1)}</strong>
+                <span class="muted">(${fmtPct(r.vsP10, 1)}–${fmtPct(r.vsP90, 1)})</span>
+                <span class="range-track" title="80%: ${fmtPct(r.vsP10, 1)} – ${fmtPct(r.vsP90, 1)}">
+                  <span class="range-band" style="left:${lPct}%;width:${wPct}%;background:${col}"></span>
+                  <span class="range-mid" style="left:${mPct}%;background:${col}"></span>
+                </span>
+              </td>
+              <td class="num"><strong>${cf ? r.sMed : fmtNum(r.sMean, 1)}</strong></td>
+              <td class="num">${r.sP10 === r.sP90 ? r.sMed : `${r.sP10}–${r.sP90}`}</td>
+              <td class="num">${r.seg}</td>
+              <td class="num">${cf ? "—" : r.prob}</td>
+              <td class="num">${cf ? "—" : r.jue}</td>
+            </tr>
+          `;
+        }).join("");
+
+        // CIS sensitivity compact comparison footer
+        const strip = document.getElementById("cis-diff-strip");
+        const wCis = (CIS_SENS.with_cis || {}).mean_shares || {};
+        const woCis = (CIS_SENS.without_cis || {}).mean_shares || {};
+        const keyP = ["PP", "PSOE", "VOX", "FA", "PODEMOS", "SALF"];
+        strip.innerHTML = `<strong>Impacto CIS en voto nacional (Con CIS vs Sin CIS):</strong> ` +
+          keyP.filter(p => p in wCis && p in woCis).map(p => {
+            const diff = (wCis[p] - woCis[p]) * 100;
+            const sign = diff >= 0 ? "+" : "";
+            return `<span style="margin-right:10px;white-space:nowrap;">${esc(pShort(p))}: <strong class="tabular">${sign}${diff.toFixed(2)} pp</strong></span>`;
+          }).join("");
+
+        // Refresh Hero KPI strip cleanly for active mode
+        const heroEl = document.getElementById("hero-kpis");
+        if (heroEl) {
+          const byId = Object.fromEntries(displayRows.map(r => [r.pid, r]));
+          const ppR = byId.PP || { sMed: 0, vsMean: 0, sP10: 0, sP90: 0 };
+          const psR = byId.PSOE || { sMed: 0, vsMean: 0, sP10: 0, sP90: 0 };
+          const vxR = byId.VOX || { sMed: 0, vsMean: 0, sP10: 0, sP90: 0 };
+          const upnR = byId.UPN_PP || { sMed: 0 };
+          const rightMed = (ppR.sMed || 0) + (vxR.sMed || 0) + (upnR.sMed || 0);
+          const ppVxProb = ((((DATA.investiture || {}).first_ballot || {}).pp_vox || {}).prob || 0) * 100;
+          const deadProb = ((DATA.investiture || {}).deadlock_prob || 0) * 100;
+          const cards = [
+            ["PP (Escaños)", `${ppR.sMed} escaños`, `${fmtPct(ppR.vsMean, 1)} voto · ${cf ? "Contrafactual" : `80%: ${ppR.sP10}–${ppR.sP90}`}`],
+            ["PSOE (Escaños)", `${psR.sMed} escaños`, `${fmtPct(psR.vsMean, 1)} voto · ${cf ? "Contrafactual" : `80%: ${psR.sP10}–${psR.sP90}`}`],
+            ["Vox (Escaños)", `${vxR.sMed} escaños`, `${fmtPct(vxR.vsMean, 1)} voto · ${cf ? "Contrafactual" : `80%: ${vxR.sP10}–${vxR.sP90}`}`],
+            [cf ? "PP + UPN + Vox (Contrafactual)" : "PP + Vox (≥ 176) · Bloqueo Art. 99.5", cf ? `${rightMed} escaños` : `${ppVxProb.toFixed(1)}%`, cf ? (rightMed >= 176 ? "Alcanza mayoría absoluta (≥176)" : `A ${176 - rightMed} escaños de mayoría`) : `Bloqueo institucional: ${deadProb.toFixed(1)}%`],
+          ];
+          heroEl.innerHTML = cards.map(([lbl, val, sub]) => `
+            <div class="kpi-card">
+              <div class="kpi-label">${esc(lbl)}</div>
+              <div class="kpi-val tabular">${esc(val)}</div>
+              <div class="kpi-sub tabular">${esc(sub)}</div>
+            </div>
+          `).join("");
+        }
+
+        // Render Hemicycle SVG + Majority Bar
+        drawHemicycleFromRows(displayRows, cf);
+      }
+
+      function drawHemicycleFromRows(rows, isDeterministic) {
+        const svg = document.getElementById("hemicycle-svg");
+        const hemiCounts = hamiltonSeats350(rows.map(r => [r.pid, r.sMean]));
+        const orderedParties = [...HEMICYCLE_ORDER];
+        rows.forEach(r => { if (!orderedParties.includes(r.pid)) orderedParties.push(r.pid); });
+
+        const rowLookup = {};
+        rows.forEach(r => { rowLookup[r.pid] = r; });
+
+        const seatTokens = [];
+        for (const pid of orderedParties) {
+          const n = hemiCounts[pid] || 0;
+          if (n <= 0) continue;
+          const info = rowLookup[pid] || { seg: n, prob: 0, jue: 0 };
+          const col = pColor(pid);
+          if (isDeterministic) {
+            for (let i = 0; i < n; i++) seatTokens.push({ pid, col, tier: "Simulado", idx: i + 1, tot: n });
+          } else {
+            // Order party seats safely: Seguro -> Probable -> En juego from left/center edges
+            const nSeg = Math.min(n, info.seg || 0);
+            const nProb = Math.min(n - nSeg, info.prob || 0);
+            const isRight = RIGHT_PARTIES.has(pid);
+            const arr = [];
+            for (let i = 0; i < n; i++) {
+              let tier = "En juego";
+              if (i < nSeg) tier = "Seguro";
+              else if (i < nSeg + nProb) tier = "Probable";
+              arr.push({ pid, col, tier, idx: i + 1, tot: n });
+            }
+            if (isRight) arr.reverse();
+            seatTokens.push(...arr);
+          }
+        }
+
+        let html = `<line x1="380" y1="54" x2="380" y2="375" stroke="#1c1917" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.55" />`;
+        html += `<text x="380" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#57534e">176</text>`;
+
+        for (let i = 0; i < HEMI_COORDS.length; i++) {
+          const pt = HEMI_COORDS[i];
+          const tok = seatTokens[i] || { pid: "OTROS", col: "#9ca3af", tier: "Seguro", idx: 1, tot: 1 };
+          let fillOp = "0.96";
+          let stroke = "none";
+          let sw = "0";
+          if (tok.tier === "Probable") {
+            fillOp = "0.62";
+            stroke = tok.col;
+            sw = "1.1";
+          } else if (tok.tier === "En juego") {
+            fillOp = "0.22";
+            stroke = tok.col;
+            sw = "1.8";
+          }
+          html += `<circle class="seat-dot" data-pid="${esc(tok.pid)}" data-tier="${esc(tok.tier)}" data-idx="${tok.idx}" data-tot="${tok.tot}" cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="7.4" fill="${tok.col}" fill-opacity="${fillOp}" stroke="${stroke}" stroke-width="${sw}" />`;
+        }
+
+        const totalShown = seatTokens.length;
+        html += `<text x="380" y="340" text-anchor="middle" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#121212">${totalShown}</text>`;
+        html += `<text x="380" y="362" text-anchor="middle" font-size="12" fill="#57534e">escaños · Congreso 29-N</text>`;
+        svg.innerHTML = html;
+
+        svg.querySelectorAll(".seat-dot").forEach(el => {
+          el.addEventListener("mouseenter", evt => {
+            const pid = el.getAttribute("data-pid");
+            const tier = el.getAttribute("data-tier");
+            const idx = el.getAttribute("data-idx");
+            const tot = el.getAttribute("data-tot");
+            showTip(evt, `<strong>${esc(pShort(pid))}</strong> (${esc(pMeta(pid).name)})<br>Escaño ${idx} de ${tot} · Nivel: <strong>${tier}</strong>`);
+          });
+          el.addEventListener("mouseleave", hideTip);
+        });
+
+        // Stacked Majority Bar
+        const bar = document.getElementById("majority-bar");
+        bar.innerHTML = orderedParties.map(pid => {
+          const n = hemiCounts[pid] || 0;
+          if (!n) return "";
+          const w = (n / 350) * 100;
+          return `<div style="width:${w.toFixed(2)}%;background:${pColor(pid)};height:100%;" title="${esc(pShort(pid))}: ${n}"></div>`;
+        }).join("");
+      }
+
+      // 52-PROVINCE CARTOGRAM & D'HONDT INSPECTOR
+      function renderCartogram() {
+        const grid = document.getElementById("cartogram-grid");
+        grid.innerHTML = "";
+        const sorted = [...DATA.constituencies].sort((a, b) => a.cpro.localeCompare(b.cpro));
+
+        for (const con of sorted) {
+          const meta = CONST_META[con.cpro] || { cartogram_row: 0, cartogram_col: 0, short_name: con.name };
+          const div = document.createElement("div");
+          div.className = "tile" + (con.cpro === STATE.selectedCpro ? " selected" : "");
+          div.style.gridRow = String(Number(meta.cartogram_row) + 1);
+          div.style.gridColumn = String(Number(meta.cartogram_col) + 1);
+
+          // Leader & gap info
+          const topParty = Object.entries(con.party_projections || {})
+            .sort((a, b) => b[1].seats_mean - a[1].seats_mean || b[1].vote_share_mean - a[1].vote_share_mean)[0];
+          const winnerId = topParty ? topParty[0] : "PSOE";
+          const gapPp = con.last_seat_battle && con.last_seat_battle.runners_up && con.last_seat_battle.runners_up[0]
+            ? Number(con.last_seat_battle.runners_up[0].vote_gap_pp) : 5.0;
+          const enJuego = (con.seat_slots || []).filter(s => s.tier === "en_juego").length;
+
+          let bg = pColor(winnerId);
+          let ink = contrastInk(bg);
+          let tagText = pShort(winnerId);
+
+          if (STATE.mapMode === "margin") {
+            const heat = Math.max(0, Math.min(1, 1 - gapPp / 3.5));
+            bg = gapPp < 0.8 ? "#b91c1c" : gapPp < 2.0 ? "#ea580c" : gapPp < 3.5 ? "#f59e0b" : "#cbd5e1";
+            ink = contrastInk(bg);
+            tagText = `${gapPp.toFixed(1)}%`;
+            div.style.opacity = String(0.7 + 0.3 * heat);
+          } else if (STATE.mapMode === "en_juego") {
+            bg = enJuego >= 3 ? "#7c2d12" : enJuego === 2 ? "#c2410c" : enJuego === 1 ? "#f97316" : "#e2e8f0";
+            ink = contrastInk(bg);
+            tagText = `${enJuego} jg`;
+          }
+
+          div.style.background = bg;
+          div.style.color = ink;
+          div.innerHTML = `
+            <div class="tile-name">${esc(meta.short_name || con.name)}</div>
+            <div class="tile-bottom">
+              <span class="tile-seats">${con.seats_2026}</span>
+              <span class="tile-tag">${esc(tagText)}</span>
+            </div>
+          `;
+          div.addEventListener("click", () => {
+            STATE.selectedCpro = con.cpro;
+            renderCartogram();
+            renderDistrictInspector();
+          });
+          div.addEventListener("mouseenter", evt => {
+            showTip(evt, `<strong>${esc(con.name)} (${con.cpro})</strong> · ${con.seats_2026} escaños<br>Líder: <strong>${esc(pShort(winnerId))}</strong> (${fmtPct(topParty ? topParty[1].vote_share_mean : 0, 1)})<br>Margen último escaño: ${gapPp.toFixed(2)} pp · ${enJuego} en juego`);
+          });
+          div.addEventListener("mouseleave", hideTip);
+          grid.appendChild(div);
+        }
+      }
+
+      function renderBattlegrounds() {
+        const tbody = document.querySelector("#battlegrounds-table tbody");
+        const rows = (DATA.battlegrounds || []).slice(0, 8);
+        tbody.innerHTML = rows.map(b => `
+          <tr class="clickable" data-cpro="${esc(b.cpro)}">
+            <td><strong>${esc(b.name)}</strong></td>
+            <td class="num">${b.seats_2026}</td>
+            <td><span class="party-chip"><span class="dot" style="background:${pColor(b.holder)}"></span>${esc(pShort(b.holder))}</span></td>
+            <td><span class="party-chip"><span class="dot" style="background:${pColor(b.challenger)}"></span>${esc(pShort(b.challenger))}</span></td>
+            <td class="num"><strong>+${Number(b.vote_gap_pp).toFixed(2)}</strong></td>
+            <td class="num">${fmtInt(b.vote_gap_abs)}</td>
+          </tr>
+        `).join("");
+        tbody.querySelectorAll("tr.clickable").forEach(tr => {
+          tr.addEventListener("click", () => {
+            STATE.selectedCpro = tr.getAttribute("data-cpro");
+            renderCartogram();
+            renderDistrictInspector();
+          });
+        });
+      }
+
+      function renderDistrictInspector() {
+        const con = DATA.constituencies.find(c => c.cpro === STATE.selectedCpro) || DATA.constituencies[0];
+        if (!con) return;
+        const meta = CONST_META[con.cpro] || {};
+        const isCity = con.cpro === "51" || con.cpro === "52";
+
+        document.getElementById("insp-ccaa").textContent = `${meta.ccaa_name || "Comunidad Autónoma"} · CPRO ${con.cpro}`;
+        document.getElementById("insp-title").textContent = `${con.name} — ${con.seats_2026} ${con.seats_2026 === 1 ? "escaño" : "escaños"}`;
+        document.getElementById("insp-meta").innerHTML = `
+          Participación est.: <strong>${fmtPct(con.turnout_mean, 1)}</strong> · En blanco: <strong>${fmtPct(con.blank_share, 2)}</strong><br>
+          ${isCity ? "Ciudad Autónoma: 0% mayoría simple" : "Barrera legal LOREG Art. 163: <strong>3,0%</strong> s/ voto válido"}
+        `;
+
+        const lsb = con.last_seat_battle || { holder: "", cutoff_quotient: 0, runners_up: [] };
+        const runnersHtml = (lsb.runners_up || []).map(r => `
+          <span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;white-space:nowrap;">
+            <span class="dot" style="background:${pColor(r.party)}"></span>
+            <strong>${esc(pShort(r.party))}</strong>: +${Number(r.vote_gap_pp).toFixed(2)} pp (${fmtInt(r.vote_gap_abs)} votos)
+          </span>
+        `).join("") || "Sin aspirantes próximos";
+
+        document.getElementById("insp-battle-box").innerHTML = `
+          <div><strong>Último escaño (corte):</strong> <span class="party-chip"><span class="dot" style="background:${pColor(lsb.holder)}"></span>${esc(pShort(lsb.holder))}</span> · Cifra de reparto: <strong class="tabular">${fmtInt(lsb.cutoff_quotient)}</strong></div>
+          <div style="margin-top:4px;"><strong>Aspirantes:</strong> ${runnersHtml}</div>
+        `;
+
+        // Party table
+        const entries = Object.entries(con.party_projections || {}).sort(
+          (a, b) => b[1].seats_mean - a[1].seats_mean || b[1].vote_share_mean - a[1].vote_share_mean
+        );
+        const tbody = document.querySelector("#insp-party-table tbody");
+        tbody.innerHTML = entries.map(([pid, pr]) => {
+          const belowBarrier = !isCity && pr.vote_share_mean < 0.03;
+          return `
+            <tr style="${belowBarrier ? "opacity:0.65;" : ""}">
+              <td>
+                <span class="party-chip"><span class="dot" style="background:${pColor(pid)}"></span>${esc(pShort(pid))}</span>
+                ${belowBarrier ? '<span class="muted" style="font-size:10.5px;">(&lt;3%)</span>' : ""}
+              </td>
+              <td class="num">${fmtPct(pr.vote_share_mean, 1)} <span class="muted">(${fmtPct(pr.vote_share_p10, 1)}–${fmtPct(pr.vote_share_p90, 1)})</span></td>
+              <td class="num"><strong>${fmtNum(pr.seats_mean, 2)}</strong></td>
+              <td class="num">${pr.seats_p10}–${pr.seats_p90}</td>
+              <td class="num">${pr.seguros} / ${pr.probables} / ${pr.en_juego}</td>
+            </tr>
+          `;
+        }).join("");
+
+        // Quotient bar chart comparing won vs next divisor cutoff
+        const qList = [];
+        for (const [pid, vals] of Object.entries(con.dhondt_quotients || {})) {
+          (vals || []).forEach((qVal, dIdx) => {
+            qList.push({ pid, div: dIdx + 1, qVal: Number(qVal) });
+          });
+        }
+        qList.sort((a, b) => b.qVal - a.qVal || a.pid.localeCompare(b.pid));
+        const topQ = qList.slice(0, Math.min(qList.length, con.seats_2026 + 4));
+        const maxQ = Math.max(1, ...topQ.map(x => x.qVal));
+        const qContainer = document.getElementById("insp-quotients");
+        qContainer.innerHTML = topQ.map((q, rank) => {
+          const won = rank < con.seats_2026;
+          const pct = Math.max(2, (q.qVal / maxQ) * 100);
+          return `
+            <div class="q-row">
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                <span style="color:${won ? "#111" : "#78716c"};font-weight:${won ? 700 : 400};">${rank + 1}. ${esc(pShort(q.pid))}/${q.div}</span>
+              </div>
+              <div class="q-track" title="Cociente ${fmtInt(q.qVal)} (${won ? "Conseguido" : "Fuera"})">
+                <div class="q-fill ${won ? "q-won" : "q-lost"}" style="width:${pct.toFixed(1)}%;background:${pColor(q.pid)}"></div>
+              </div>
+              <div class="num tabular" style="font-size:11.5px;color:${won ? "#111" : "#78716c"};">${fmtInt(q.qVal)}</div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      // 100-DAY NATIONAL POLLING TREND SVG
+      function renderTrendToggles() {
+        const parties = Object.keys((DATA.trend_series && DATA.trend_series.parties) || {});
+        const wrap = document.getElementById("trend-toggles");
+        wrap.innerHTML = parties.map(pid => `
+          <button type="button" class="party-toggle ${STATE.hiddenTrendParties.has(pid) ? "off" : ""}" data-pid="${esc(pid)}">
+            <span class="dot" style="background:${pColor(pid)}"></span>${esc(pShort(pid))}
+          </button>
+        `).join("");
+        wrap.querySelectorAll(".party-toggle").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const pid = btn.getAttribute("data-pid");
+            if (STATE.hiddenTrendParties.has(pid)) STATE.hiddenTrendParties.delete(pid);
+            else STATE.hiddenTrendParties.add(pid);
+            renderTrendToggles();
+            renderTrendChart();
+          });
+        });
+      }
+
+      function renderTrendChart() {
+        const ts = DATA.trend_series || {};
+        const dates = ts.dates || [];
+        const partyData = ts.parties || {};
+        const polls = ts.polls || [];
+        const svg = document.getElementById("trend-svg");
+        if (!dates.length) {
+          svg.innerHTML = `<text x="460" y="160" text-anchor="middle" fill="#78716c">Sin serie histórica suficiente</text>`;
+          return;
+        }
+
+        const W = 920, H = 330, padL = 46, padR = 24, padT = 20, padB = 34;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+        const parseD = dStr => new Date(dStr + "T12:00:00Z").getTime();
+        const tMin = parseD(dates[0]);
+        const tMax = parseD(dates[dates.length - 1]);
+        const tSpan = Math.max(86400000, tMax - tMin);
+
+        let yMax = 0.36;
+        for (const [pid, ser] of Object.entries(partyData)) {
+          if (STATE.hiddenTrendParties.has(pid)) continue;
+          const p90Arr = ser.p90 || ser.mean || [];
+          p90Arr.forEach(v => { if (v + 0.03 > yMax) yMax = Math.min(0.55, v + 0.03); });
+        }
+        const xPos = t => padL + ((t - tMin) / tSpan) * plotW;
+        const yPos = v => padT + plotH * (1 - Math.max(0, Math.min(yMax, v)) / yMax);
+
+        let html = "";
+        // Horizontal gridlines
+        for (let tick = 0; tick <= Math.floor(yMax * 100); tick += 5) {
+          if (tick % 10 !== 0 && yMax > 0.32) continue;
+          const y = yPos(tick / 100);
+          html += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#e7e3da" stroke-width="1" />`;
+          html += `<text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="#78716c">${tick}%</text>`;
+        }
+
+        // Date ticks
+        const tickIdxs = [0, Math.floor(dates.length / 3), Math.floor((2 * dates.length) / 3), dates.length - 1];
+        [...new Set(tickIdxs)].forEach(i => {
+          const x = xPos(parseD(dates[i]));
+          html += `<line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${H - padB}" stroke="#f3f0e8" stroke-width="1" />`;
+          html += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11" fill="#78716c">${esc(dates[i])}</text>`;
+        });
+
+        // Ribbons & lines
+        for (const [pid, ser] of Object.entries(partyData)) {
+          if (STATE.hiddenTrendParties.has(pid)) continue;
+          const col = pColor(pid);
+          const mean = ser.mean || [];
+          const p10 = ser.p10 || mean;
+          const p90 = ser.p90 || mean;
+          if (mean.length !== dates.length) continue;
+
+          // Confidence ribbon polygon
+          const topPts = dates.map((d, i) => `${xPos(parseD(d)).toFixed(1)},${yPos(p90[i]).toFixed(1)}`);
+          const botPts = dates.map((d, i) => `${xPos(parseD(d)).toFixed(1)},${yPos(p10[i]).toFixed(1)}`).reverse();
+          html += `<polygon points="${topPts.concat(botPts).join(" ")}" fill="${col}" fill-opacity="0.12" />`;
+
+          // Smoothed mean path
+          const lineD = dates.map((d, i) => `${i === 0 ? "M" : "L"}${xPos(parseD(d)).toFixed(1)},${yPos(mean[i]).toFixed(1)}`).join(" ");
+          html += `<path d="${lineD}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" />`;
+
+          // End label
+          const lastVal = mean[mean.length - 1];
+          const lx = xPos(parseD(dates[dates.length - 1]));
+          const ly = yPos(lastVal);
+          html += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.5" fill="${col}" />`;
+        }
+
+        // Poll scatter points
+        for (const p of polls) {
+          const px = xPos(parseD(p.date));
+          if (px < padL || px > W - padR) continue;
+          for (const [pid, val] of Object.entries(p.shares || {})) {
+            if (STATE.hiddenTrendParties.has(pid) || !(pid in partyData)) continue;
+            const py = yPos(val);
+            const col = pColor(pid);
+            if (p.is_cis) {
+              html += `<polygon class="poll-pt" data-date="${esc(p.date)}" data-pollster="${esc(p.pollster)}" data-pid="${esc(pid)}" data-val="${val}" data-cis="1" points="${px.toFixed(1)},${(py - 4).toFixed(1)} ${(px + 4).toFixed(1)},${py.toFixed(1)} ${px.toFixed(1)},${(py + 4).toFixed(1)} ${(px - 4).toFixed(1)},${py.toFixed(1)}" fill="${col}" stroke="#111" stroke-width="0.9" fill-opacity="0.9" />`;
+            } else {
+              html += `<circle class="poll-pt" data-date="${esc(p.date)}" data-pollster="${esc(p.pollster)}" data-pid="${esc(pid)}" data-val="${val}" data-cis="0" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="2.7" fill="${col}" fill-opacity="0.58" />`;
+            }
+          }
+        }
+
+        svg.innerHTML = html;
+        svg.querySelectorAll(".poll-pt").forEach(pt => {
+          pt.addEventListener("mouseenter", evt => {
+            const dStr = pt.getAttribute("data-date");
+            const pol = pt.getAttribute("data-pollster");
+            const pid = pt.getAttribute("data-pid");
+            const val = Number(pt.getAttribute("data-val"));
+            const cisTag = pt.getAttribute("data-cis") === "1" ? " · <em>CIS</em>" : "";
+            showTip(evt, `<strong>${esc(pol)}</strong> (${dStr}${cisTag})<br>${esc(pShort(pid))}: <strong>${fmtPct(val, 1)}</strong>`);
+          });
+          pt.addEventListener("mouseleave", hideTip);
+        });
+      }
+
+      // LIVE WHAT-IF SWING & ART. 99 PACT BUILDER
+      function renderWhatIfSliders() {
+        const vsMap = DATA.national.vote_shares;
+        const container = document.getElementById("whatif-sliders");
+        container.innerHTML = SLIDER_PARTIES.map(pid => {
+          const basePct = Number((vsMap[pid] || {}).mean || 0) * 100;
+          const dVal = Number(STATE.swings[pid] || 0);
+          return `
+            <div class="slider-item">
+              <div class="slider-top">
+                <span class="party-chip"><span class="dot" style="background:${pColor(pid)}"></span>${esc(pShort(pid))}</span>
+                <span class="tabular" id="sl-lbl-${esc(pid)}">${basePct.toFixed(1)}% (${dVal >= 0 ? "+" : ""}${dVal.toFixed(1)} pp)</span>
+              </div>
+              <input type="range" min="-8" max="8" step="0.2" value="${dVal}" data-pid="${esc(pid)}" aria-label="Desplazamiento para ${esc(pShort(pid))}" />
+            </div>
+          `;
+        }).join("");
+
+        container.querySelectorAll("input[type='range']").forEach(inp => {
+          inp.addEventListener("input", () => {
+            const pid = inp.getAttribute("data-pid");
+            STATE.swings[pid] = Number(inp.value);
+            const basePct = Number((vsMap[pid] || {}).mean || 0) * 100;
+            document.getElementById("sl-lbl-" + pid).textContent =
+              `${Math.max(0.1, basePct + STATE.swings[pid]).toFixed(1)}% (${STATE.swings[pid] >= 0 ? "+" : ""}${STATE.swings[pid].toFixed(1)} pp)`;
+            updateWhatIfAndPact();
+          });
+        });
+      }
+
+      function computeCurrentWhatIf() {
+        const vsMap = DATA.national.vote_shares;
+        const mult = {};
+        let movedCount = 0;
+        for (const pid of DATA.party_order) {
+          const base = Number((vsMap[pid] || {}).mean || 0);
+          const delta = Number(STATE.swings[pid] || 0) / 100;
+          if (Math.abs(delta) > 1e-6) movedCount += 1;
+          mult[pid] = base > 0.002 ? Math.max(0.05, (base + delta) / base) : 1.0;
+        }
+        const solved = solveShiftedChamber(mult);
+        return { solved, mult, movedCount };
+      }
+
+      function renderPactBuilderRows() {
+        const seatsMap = DATA.national.seats;
+        const activePactParties = DATA.party_order.filter(pid => (seatsMap[pid] && seatsMap[pid].p95 > 0) || pid === "SALF");
+        const box = document.getElementById("pact-builder-rows");
+        box.innerHTML = activePactParties.map(pid => {
+          const st = STATE.pactVotes[pid] || "no";
+          return `
+            <div class="pact-row" data-pid="${esc(pid)}">
+              <span class="party-chip"><span class="dot" style="background:${pColor(pid)}"></span>${esc(pShort(pid))}</span>
+              <span class="muted tabular" id="pact-seat-cnt-${esc(pid)}" style="font-size:12px;margin-left:auto;">—</span>
+              <div class="tri-pill">
+                <button type="button" class="tri-btn yes ${st === "yes" ? "active" : ""}" data-v="yes">Sí</button>
+                <button type="button" class="tri-btn abs ${st === "abs" ? "active" : ""}" data-v="abs">Abst</button>
+                <button type="button" class="tri-btn no ${st === "no" ? "active" : ""}" data-v="no">No</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        box.querySelectorAll(".tri-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const row = btn.closest(".pact-row");
+            const pid = row.getAttribute("data-pid");
+            STATE.pactVotes[pid] = btn.getAttribute("data-v");
+            row.querySelectorAll(".tri-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            updateWhatIfAndPact();
+          });
+        });
+      }
+
+      function applyPactPreset(presetKey) {
+        const sets = {
+          pp_vox: { yes: ["PP", "UPN_PP", "VOX"], abs: ["CCA"] },
+          pp_minority: { yes: ["PP", "UPN_PP", "CCA"], abs: ["VOX", "SALF", "PNV", "JUNTS"] },
+          prog_sin_junts: { yes: ["PSOE", "FA", "PODEMOS", "COMPROMIS_FV", "ADELANTE", "ERC", "EH_BILDU", "PNV", "BNG", "UPC", "ARA_MES"], abs: ["JUNTS", "CCA"] },
+          plurinacional: { yes: ["PSOE", "FA", "PODEMOS", "COMPROMIS_FV", "ADELANTE", "ERC", "EH_BILDU", "PNV", "BNG", "JUNTS", "UPC", "ARA_MES"], abs: ["CCA"] },
+          gran_coalicion: { yes: ["PP", "UPN_PP", "PSOE"], abs: [] },
+        };
+        const cfg = sets[presetKey] || { yes: [], abs: [] };
+        DATA.party_order.forEach(pid => {
+          if (cfg.yes.includes(pid)) STATE.pactVotes[pid] = "yes";
+          else if (cfg.abs.includes(pid)) STATE.pactVotes[pid] = "abs";
+          else STATE.pactVotes[pid] = "no";
+        });
+        renderPactBuilderRows();
+        updateWhatIfAndPact();
+      }
+
+      function updateWhatIfAndPact() {
+        const vsMap = DATA.national.vote_shares;
+        const seatsMap = DATA.national.seats;
+        const { solved, movedCount } = computeCurrentWhatIf();
+        const baseDet = movedCount === 0
+          ? solved
+          : solveShiftedChamber(Object.fromEntries(DATA.party_order.map(p => [p, 1.0])));
+
+        // Update What-If summary & table
+        document.getElementById("whatif-summary").textContent =
+          movedCount === 0 ? "Escenario base determinista (0 variaciones)" : `${movedCount} partidos ajustados · 350 escaños LOREG`;
+
+        const wiRows = DATA.party_order.filter(pid => (solved.natSeats[pid] || 0) > 0 || (seatsMap[pid] && seatsMap[pid].p95 > 0) || Math.abs(STATE.swings[pid] || 0) > 0.05);
+        wiRows.sort((a, b) => (solved.natSeats[b] || 0) - (solved.natSeats[a] || 0) || (solved.natShares[b] || 0) - (solved.natShares[a] || 0));
+
+        document.querySelector("#whatif-table tbody").innerHTML = wiRows.slice(0, 14).map(pid => {
+          const bVs = Number(baseDet.natShares[pid] || (vsMap[pid] || {}).mean || 0);
+          const sVs = Number(solved.natShares[pid] || 0);
+          const bSeats = Number(baseDet.natSeats[pid] || 0);
+          const sSeats = Number(solved.natSeats[pid] || 0);
+          const diff = sSeats - bSeats;
+          const diffStr = diff > 0 ? `+${diff}` : String(diff);
+          const diffCol = diff > 0 ? "#15803d" : diff < 0 ? "#b91c1c" : "#78716c";
+          return `
+            <tr>
+              <td><span class="party-chip"><span class="dot" style="background:${pColor(pid)}"></span>${esc(pShort(pid))}</span></td>
+              <td class="num">${fmtPct(bVs, 1)}</td>
+              <td class="num"><strong>${fmtPct(sVs, 1)}</strong></td>
+              <td class="num"><strong>${sSeats}</strong></td>
+              <td class="num" style="color:${diffCol};font-weight:700;">${diffStr}</td>
+            </tr>
+          `;
+        }).join("");
+
+        // Compute deterministic tally in custom Pact Builder + Monte Carlo approx across 200 sim_sample rows shifted by user swing
+        let yesDet = 0, absDet = 0, noDet = 0;
+        const totalDet = Object.values(solved.natSeats).reduce((a, b) => a + b, 0) || 350;
+        for (const pid of DATA.party_order) {
+          const sc = solved.natSeats[pid] || 0;
+          const v = STATE.pactVotes[pid] || "no";
+          if (v === "yes") yesDet += sc;
+          else if (v === "abs") absDet += sc;
+          else noDet += sc;
+          const cntEl = document.getElementById("pact-seat-cnt-" + pid);
+          if (cntEl) cntEl.textContent = `${sc} esc.`;
+        }
+
+        // Shift delta per party on sim_sample proportional to deterministic delta (exact on 0-swing baseline)
+        const detShiftSeats = {};
+        DATA.party_order.forEach(p => { detShiftSeats[p] = (solved.natSeats[p] || 0) - (baseDet.natSeats[p] || 0); });
+
+        let pass1 = 0, pass2 = 0;
+        const sample = DATA.sim_sample || [];
+        for (const draw of sample) {
+          let sy = 0, sn = 0;
+          for (const [pid, rawS] of Object.entries(draw.seats || {})) {
+            const sAdj = Math.max(0, Number(rawS) + (detShiftSeats[pid] || 0));
+            const v = STATE.pactVotes[pid] || "no";
+            if (v === "yes") sy += sAdj;
+            else if (v === "no") sn += sAdj;
+          }
+          if (sy >= 176) pass1 += 1;
+          if (sy > sn) pass2 += 1;
+        }
+        const nS = Math.max(1, sample.length);
+        const prob1 = (pass1 / nS) * 100;
+        const prob2 = (pass2 / nS) * 100;
+        const margin2 = yesDet - noDet;
+
+        document.getElementById("custom-pact-result").innerHTML = `
+          <div style="border:1px solid var(--border);border-radius:5px;padding:10px;background:${yesDet >= 176 ? "#f0fdf4" : "#faf9f5"};">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-muted);">1.ª Vuelta (&ge; 176 de ${totalDet})</div>
+            <div class="serif tabular" style="font-size:1.35rem;font-weight:700;margin:2px 0;color:${yesDet >= 176 ? "#15803d" : "#121212"};">${yesDet} Sí <span style="font-size:12px;font-weight:600;">(${prob1.toFixed(0)}% MC)</span></div>
+            <div class="muted tabular" style="font-size:11.5px;">${yesDet >= 176 ? "Supera mayoría absoluta" : `Faltan ${176 - yesDet} escaños`}</div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:5px;padding:10px;background:${margin2 > 0 ? "#f0fdf4" : "#fef2f2"};">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-muted);">2.ª Vuelta (Sí &gt; No)</div>
+            <div class="serif tabular" style="font-size:1.35rem;font-weight:700;margin:2px 0;color:${margin2 > 0 ? "#15803d" : "#b91c1c"};">${margin2 >= 0 ? "+" : ""}${margin2} <span style="font-size:12px;font-weight:600;">(${prob2.toFixed(0)}% MC)</span></div>
+            <div class="muted tabular" style="font-size:11.5px;">Sí ${yesDet} · Abst ${absDet} · No ${noDet}</div>
+          </div>
+        `;
+      }
+
+      function renderInvestitureMcTable() {
+        const tbody = document.querySelector("#investiture-mc-table tbody");
+        const inv = DATA.investiture || { first_ballot: {}, second_ballot: {} };
+        const rows = [];
+        for (const p of Object.values(inv.first_ballot || {})) {
+          rows.push(`
+            <tr>
+              <td><span class="badge">1.ª &ge;176</span></td>
+              <td><strong>${esc(p.label)}</strong></td>
+              <td class="num"><strong>${(p.prob * 100).toFixed(1)}%</strong></td>
+              <td class="num">${p.median_seats} (${p.p10}–${p.p90})</td>
+            </tr>
+          `);
+        }
+        for (const s of Object.values(inv.second_ballot || {})) {
+          rows.push(`
+            <tr>
+              <td><span class="badge" style="background:#eef2ff;">2.ª Sí&gt;No</span></td>
+              <td>${esc(s.label)}</td>
+              <td class="num"><strong>${(s.prob * 100).toFixed(1)}%</strong></td>
+              <td class="num">${s.median_margin >= 0 ? "+" : ""}${s.median_margin}</td>
+            </tr>
+          `);
+        }
+        tbody.innerHTML = rows.join("");
+      }
+
+      // POLLSTER SCORECARD TABLE
+      function renderPollsterTable() {
+        const q = STATE.pollsterFilter.trim().toLowerCase();
+        const key = STATE.pollsterSortKey;
+        const asc = STATE.pollsterSortAsc;
+        const list = (DATA.pollster_scorecard || []).filter(r => !q || String(r.pollster).toLowerCase().includes(q));
+        list.sort((a, b) => {
+          const va = a[key], vb = b[key];
+          if (typeof va === "string" || typeof vb === "string") {
+            return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+          }
+          return asc ? Number(va) - Number(vb) : Number(vb) - Number(va);
+        });
+        const fmtHouse = v => {
+          const x = Number(v || 0);
+          const col = x > 0.35 ? "#15803d" : x < -0.35 ? "#b91c1c" : "#57534e";
+          return `<span style="color:${col};font-weight:${Math.abs(x) > 0.35 ? 700 : 400};">${x >= 0 ? "+" : ""}${x.toFixed(2)}</span>`;
+        };
+        document.querySelector("#pollster-table tbody").innerHTML = list.map(r => `
+          <tr>
+            <td><strong>${esc(r.pollster)}</strong></td>
+            <td><span class="grade-pill grade-${esc(r.grade)}">${esc(r.grade)}</span></td>
+            <td class="num">${r.n_elections}</td>
+            <td class="num">${r.n_polls_2026}</td>
+            <td class="num"><strong>${Number(r.shrunk_mae).toFixed(2)}</strong></td>
+            <td class="num">${Number(r.herding_ratio).toFixed(2)}</td>
+            <td class="num">${fmtHouse(r.delta_PP)}</td>
+            <td class="num">${fmtHouse(r.delta_PSOE)}</td>
+            <td class="num">${fmtHouse(r.delta_VOX)}</td>
+            <td class="num">${fmtHouse(r.delta_FA)}</td>
+            <td class="num">${fmtHouse(r.delta_PODEMOS)}</td>
+          </tr>
+        `).join("");
+      }
+
+      // LOOCV BACKTEST DIAGNOSTICS
+      function renderBacktest() {
+        const bt = DATA.backtest;
+        if (!bt) return;
+        const srcModels = STATE.btHorizon === "global" ? bt.models : ((bt.horizons || {})[STATE.btHorizon] || bt.models);
+        const labels = { kernel: "Stage 1A Kernel", state_space: "Stage 1B Espacio-Estado", ensemble: "Ensemble Calibrado" };
+
+        document.querySelector("#bt-models-table tbody").innerHTML = ["ensemble", "state_space", "kernel"]
+          .filter(k => k in srcModels)
+          .map(k => {
+            const m = srcModels[k];
+            return `
+              <tr style="${k === "ensemble" ? "background:#f8f6f0;font-weight:600;" : ""}">
+                <td><strong>${labels[k] || k}</strong></td>
+                <td class="num">${Number(m.vote_mae_national).toFixed(2)} pp</td>
+                <td class="num">${Number(m.seat_mae_provincial).toFixed(3)}</td>
+                <td class="num">${Number(m.seat_mae_national).toFixed(2)}</td>
+                <td class="num">${Number(m.brier_score).toFixed(4)}</td>
+                <td class="num">${(m.coverage_80_provincial_seats * 100).toFixed(1)}% / ${(m.coverage_80_national_seats * 100).toFixed(1)}%</td>
+                <td class="num">${(m.coverage_95_provincial_seats * 100).toFixed(1)}% / ${(m.coverage_95_national_seats * 100).toFixed(1)}%</td>
+              </tr>
+            `;
+          }).join("");
+
+        const cp = bt.calibrated_parameters || {};
+        const cov = cp.covariance || {};
+        document.getElementById("bt-cal-params").innerHTML =
+          `<strong>Parámetros calibrados:</strong> Pesos K/EE = <strong>${cp.ensemble_weight_kernel} / ${cp.ensemble_weight_state_space}</strong> · Student-t df = <strong>${cov.student_t_df}</strong> · &sigma;<sub>nac</sub> = <strong>${cov.nat_scale}</strong> · &sigma;<sub>CCAA</sub> = <strong>${cov.ccaa_scale}</strong> · &sigma;<sub>prov</sub> = <strong>${cov.prov_scale}</strong>`;
+
+        const tierInfo = [
+          ["seguro", "Seguro (≥99%)", "#15803d"],
+          ["probable", "Probable (75–99%)", "#0284c7"],
+          ["en_juego", "En juego (25–75%)", "#d97706"],
+          ["remoto", "Remoto (5–25%)", "#64748b"],
+        ];
+        document.getElementById("bt-tiers-bars").innerHTML = tierInfo.map(([k, lbl, col]) => {
+          const tb = (bt.tier_calibration || {})[k] || { hits: 0, total: 0, hit_rate: 0 };
+          const pct = Number(tb.hit_rate || 0) * 100;
+          return `
+            <div style="margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;">
+                <span><strong>${lbl}</strong></span>
+                <span class="tabular"><strong>${pct.toFixed(1)}%</strong> empírico (${tb.hits} / ${tb.total})</span>
+              </div>
+              <div style="height:10px;background:#ece8df;border-radius:999px;overflow:hidden;margin-top:3px;">
+                <div style="width:${pct.toFixed(1)}%;height:100%;background:${col};border-radius:999px;"></div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        document.querySelector("#bt-elections-table tbody").innerHTML = Object.entries(bt.per_election || {}).map(([eid, m]) => `
+          <tr>
+            <td><strong>${esc(eid)}</strong></td>
+            <td class="num">${Number(m.vote_mae_national).toFixed(2)} pp</td>
+            <td class="num">${Number(m.seat_mae_provincial).toFixed(3)}</td>
+            <td class="num">${Number(m.seat_mae_national).toFixed(2)}</td>
+            <td class="num">${Number(m.brier_score).toFixed(4)}</td>
+            <td class="num">${(m.coverage_80_provincial_seats * 100).toFixed(1)}% / ${(m.coverage_95_provincial_seats * 100).toFixed(1)}%</td>
+          </tr>
+        `).join("");
+      }
+
+      // EVENT WIRING
+      document.querySelectorAll("#engine-toggle .seg-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          STATE.engine = btn.getAttribute("data-engine");
+          document.querySelectorAll("#engine-toggle .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+          renderHemicycleAndNational();
+        });
+      });
+
+      document.querySelectorAll("#cis-toggle .seg-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          STATE.cis = btn.getAttribute("data-cis");
+          document.querySelectorAll("#cis-toggle .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+          renderHemicycleAndNational();
+        });
+      });
+
+      document.getElementById("btn-reset-mode").addEventListener("click", () => {
+        STATE.engine = BASE_ENGINE;
+        STATE.cis = BASE_CIS;
+        document.querySelectorAll("#engine-toggle .seg-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-engine") === STATE.engine));
+        document.querySelectorAll("#cis-toggle .seg-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-cis") === STATE.cis));
+        renderHemicycleAndNational();
+      });
+
+      document.querySelectorAll("#map-mode-toggle .seg-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          STATE.mapMode = btn.getAttribute("data-mapmode");
+          document.querySelectorAll("#map-mode-toggle .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+          renderCartogram();
+        });
+      });
+
+      document.getElementById("btn-reset-sliders").addEventListener("click", () => {
+        SLIDER_PARTIES.forEach(p => { STATE.swings[p] = 0.0; });
+        renderWhatIfSliders();
+        updateWhatIfAndPact();
+      });
+
+      document.querySelectorAll("#pact-presets button").forEach(btn => {
+        btn.addEventListener("click", () => applyPactPreset(btn.getAttribute("data-preset")));
+      });
+
+      document.getElementById("pollster-search").addEventListener("input", evt => {
+        STATE.pollsterFilter = evt.target.value || "";
+        renderPollsterTable();
+      });
+
+      document.querySelectorAll("#pollster-table th.sortable").forEach(th => {
+        th.addEventListener("click", () => {
+          const k = th.getAttribute("data-sort");
+          if (STATE.pollsterSortKey === k) STATE.pollsterSortAsc = !STATE.pollsterSortAsc;
+          else {
+            STATE.pollsterSortKey = k;
+            STATE.pollsterSortAsc = (k === "pollster" || k === "shrunk_mae" || k === "grade");
+          }
+          renderPollsterTable();
+        });
+      });
+
+      document.querySelectorAll("#bt-horizon-toggle .seg-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          STATE.btHorizon = btn.getAttribute("data-hor");
+          document.querySelectorAll("#bt-horizon-toggle .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+          renderBacktest();
+        });
+      });
+
+      // INITIAL RENDER
+      renderHemicycleAndNational();
+      renderCartogram();
+      renderBattlegrounds();
+      renderDistrictInspector();
+      renderTrendToggles();
+      renderTrendChart();
+      renderWhatIfSliders();
+      renderPactBuilderRows();
+      updateWhatIfAndPact();
+      renderInvestitureMcTable();
+      renderPollsterTable();
+      renderBacktest();
+    })();
+  </script>
+</body>
+</html>

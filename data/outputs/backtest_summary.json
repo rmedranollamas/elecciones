@@ -11,105 +11,105 @@
   "horizons": {
     "T-15d": {
       "kernel": {
-        "brier_score": 0.084505,
-        "log_score": 0.295923,
+        "brier_score": 0.07986,
+        "log_score": 0.272128,
         "vote_mae_national": 1.1562,
-        "seat_mae_provincial": 0.3706,
-        "seat_mae_national": 3.7841,
-        "coverage_80_provincial_seats": 0.9453,
-        "coverage_95_provincial_seats": 0.9803,
+        "seat_mae_provincial": 0.3704,
+        "seat_mae_national": 3.9467,
+        "coverage_80_provincial_seats": 0.9548,
+        "coverage_95_provincial_seats": 0.9867,
         "coverage_80_national_seats": 0.8125,
-        "coverage_95_national_seats": 0.9062
+        "coverage_95_national_seats": 0.8906
       },
       "state_space": {
-        "brier_score": 0.078912,
-        "log_score": 0.2753,
+        "brier_score": 0.079251,
+        "log_score": 0.274999,
         "vote_mae_national": 1.1282,
-        "seat_mae_provincial": 0.3697,
-        "seat_mae_national": 3.7272,
-        "coverage_80_provincial_seats": 0.962,
-        "coverage_95_provincial_seats": 0.9859,
-        "coverage_80_national_seats": 0.8485,
-        "coverage_95_national_seats": 0.9091
+        "seat_mae_provincial": 0.3738,
+        "seat_mae_national": 3.8004,
+        "coverage_80_provincial_seats": 0.9614,
+        "coverage_95_provincial_seats": 0.9877,
+        "coverage_80_national_seats": 0.8358,
+        "coverage_95_national_seats": 0.9254
       },
       "ensemble": {
-        "brier_score": 0.079167,
-        "log_score": 0.277257,
+        "brier_score": 0.078719,
+        "log_score": 0.271896,
         "vote_mae_national": 1.1316,
-        "seat_mae_provincial": 0.3673,
-        "seat_mae_national": 3.7014,
-        "coverage_80_provincial_seats": 0.9618,
-        "coverage_95_provincial_seats": 0.9858,
-        "coverage_80_national_seats": 0.8333,
-        "coverage_95_national_seats": 0.9091
+        "seat_mae_provincial": 0.3723,
+        "seat_mae_national": 3.7387,
+        "coverage_80_provincial_seats": 0.9598,
+        "coverage_95_provincial_seats": 0.9857,
+        "coverage_80_national_seats": 0.8182,
+        "coverage_95_national_seats": 0.9242
       }
     },
     "T-6d": {
       "kernel": {
-        "brier_score": 0.08121,
-        "log_score": 0.283494,
+        "brier_score": 0.077007,
+        "log_score": 0.263335,
         "vote_mae_national": 1.0701,
-        "seat_mae_provincial": 0.3517,
-        "seat_mae_national": 3.5718,
-        "coverage_80_provincial_seats": 0.9481,
-        "coverage_95_provincial_seats": 0.9773,
-        "coverage_80_national_seats": 0.8,
-        "coverage_95_national_seats": 0.8769
+        "seat_mae_provincial": 0.3507,
+        "seat_mae_national": 3.5308,
+        "coverage_80_provincial_seats": 0.9509,
+        "coverage_95_provincial_seats": 0.98,
+        "coverage_80_national_seats": 0.8154,
+        "coverage_95_national_seats": 0.9231
       },
       "state_space": {
-        "brier_score": 0.076543,
-        "log_score": 0.269803,
+        "brier_score": 0.073348,
+        "log_score": 0.252561,
         "vote_mae_national": 1.0096,
-        "seat_mae_provincial": 0.3494,
-        "seat_mae_national": 3.2912,
-        "coverage_80_provincial_seats": 0.9574,
-        "coverage_95_provincial_seats": 0.9828,
-        "coverage_80_national_seats": 0.8806,
-        "coverage_95_national_seats": 0.9104
+        "seat_mae_provincial": 0.346,
+        "seat_mae_national": 3.2302,
+        "coverage_80_provincial_seats": 0.967,
+        "coverage_95_provincial_seats": 0.9857,
+        "coverage_80_national_seats": 0.8507,
+        "coverage_95_national_seats": 0.9254
       },
       "ensemble": {
-        "brier_score": 0.07926,
-        "log_score": 0.283394,
+        "brier_score": 0.076775,
+        "log_score": 0.266043,
         "vote_mae_national": 1.0245,
-        "seat_mae_provincial": 0.3496,
-        "seat_mae_national": 3.3829,
-        "coverage_80_provincial_seats": 0.9566,
-        "coverage_95_provincial_seats": 0.9792,
-        "coverage_80_national_seats": 0.8333,
-        "coverage_95_national_seats": 0.8788
+        "seat_mae_provincial": 0.353,
+        "seat_mae_national": 3.4015,
+        "coverage_80_provincial_seats": 0.9592,
+        "coverage_95_provincial_seats": 0.9837,
+        "coverage_80_national_seats": 0.8485,
+        "coverage_95_national_seats": 0.9091
       }
     },
     "T-1d": {
       "kernel": {
-        "brier_score": 0.078664,
-        "log_score": 0.270759,
+        "brier_score": 0.074909,
+        "log_score": 0.255617,
         "vote_mae_national": 1.0245,
-        "seat_mae_provincial": 0.3379,
-        "seat_mae_national": 3.2917,
-        "coverage_80_provincial_seats": 0.9448,
-        "coverage_95_provincial_seats": 0.9788,
-        "coverage_80_national_seats": 0.8281,
+        "seat_mae_provincial": 0.3378,
+        "seat_mae_national": 3.3646,
+        "coverage_80_provincial_seats": 0.9536,
+        "coverage_95_provincial_seats": 0.9827,
+        "coverage_80_national_seats": 0.7969,
         "coverage_95_national_seats": 0.8906
       },
       "state_space": {
-        "brier_score": 0.073852,
-        "log_score": 0.25651,
+        "brier_score": 0.071224,
+        "log_score": 0.247027,
         "vote_mae_national": 0.9105,
-        "seat_mae_provincial": 0.3336,
-        "seat_mae_national": 2.8848,
-        "coverage_80_provincial_seats": 0.9599,
-        "coverage_95_provincial_seats": 0.9854,
+        "seat_mae_provincial": 0.3358,
+        "seat_mae_national": 2.9138,
+        "coverage_80_provincial_seats": 0.962,
+        "coverage_95_provincial_seats": 0.9873,
         "coverage_80_national_seats": 0.8636,
         "coverage_95_national_seats": 0.9242
       },
       "ensemble": {
-        "brier_score": 0.07405,
-        "log_score": 0.25862,
+        "brier_score": 0.072467,
+        "log_score": 0.250153,
         "vote_mae_national": 0.939,
-        "seat_mae_provincial": 0.3334,
-        "seat_mae_national": 2.9801,
-        "coverage_80_provincial_seats": 0.9606,
-        "coverage_95_provincial_seats": 0.9835,
+        "seat_mae_provincial": 0.3346,
+        "seat_mae_national": 3.0263,
+        "coverage_80_provincial_seats": 0.9627,
+        "coverage_95_provincial_seats": 0.9873,
         "coverage_80_national_seats": 0.8462,
         "coverage_95_national_seats": 0.9231
       }
@@ -117,66 +117,66 @@
   },
   "models": {
     "kernel": {
-      "brier_score": 0.081521,
-      "log_score": 0.283654,
+      "brier_score": 0.077311,
+      "log_score": 0.263865,
       "vote_mae_national": 1.0835,
-      "seat_mae_provincial": 0.3536,
-      "seat_mae_national": 3.5493,
-      "coverage_80_provincial_seats": 0.9461,
-      "coverage_95_provincial_seats": 0.9788,
-      "coverage_80_national_seats": 0.8135,
-      "coverage_95_national_seats": 0.8912
+      "seat_mae_provincial": 0.3531,
+      "seat_mae_national": 3.6136,
+      "coverage_80_provincial_seats": 0.9531,
+      "coverage_95_provincial_seats": 0.9832,
+      "coverage_80_national_seats": 0.8083,
+      "coverage_95_national_seats": 0.9016
     },
     "state_space": {
-      "brier_score": 0.076513,
-      "log_score": 0.267482,
+      "brier_score": 0.074697,
+      "log_score": 0.25851,
       "vote_mae_national": 1.016,
-      "seat_mae_provincial": 0.3511,
-      "seat_mae_national": 3.301,
-      "coverage_80_provincial_seats": 0.9598,
-      "coverage_95_provincial_seats": 0.9847,
-      "coverage_80_national_seats": 0.8643,
-      "coverage_95_national_seats": 0.9146
+      "seat_mae_provincial": 0.352,
+      "seat_mae_national": 3.3168,
+      "coverage_80_provincial_seats": 0.9635,
+      "coverage_95_provincial_seats": 0.9869,
+      "coverage_80_national_seats": 0.85,
+      "coverage_95_national_seats": 0.925
     },
     "ensemble": {
-      "brier_score": 0.077552,
-      "log_score": 0.273275,
+      "brier_score": 0.07605,
+      "log_score": 0.262912,
       "vote_mae_national": 1.0316,
-      "seat_mae_provincial": 0.3503,
-      "seat_mae_national": 3.3567,
-      "coverage_80_provincial_seats": 0.9597,
-      "coverage_95_provincial_seats": 0.9829,
+      "seat_mae_provincial": 0.3534,
+      "seat_mae_national": 3.3907,
+      "coverage_80_provincial_seats": 0.9606,
+      "coverage_95_provincial_seats": 0.9856,
       "coverage_80_national_seats": 0.8376,
-      "coverage_95_national_seats": 0.9036
+      "coverage_95_national_seats": 0.9188
     }
   },
   "tier_calibration": {
     "seguro": {
-      "total": 2697,
-      "hits": 2680,
-      "hit_rate": 0.9937
+      "total": 2518,
+      "hits": 2501,
+      "hit_rate": 0.9932
     },
     "probable": {
-      "total": 1698,
-      "hits": 1554,
-      "hit_rate": 0.9152
+      "total": 1851,
+      "hits": 1711,
+      "hit_rate": 0.9244
     },
     "en_juego": {
-      "total": 1614,
-      "hits": 838,
-      "hit_rate": 0.5192
+      "total": 1668,
+      "hits": 860,
+      "hit_rate": 0.5156
     },
     "remoto": {
-      "total": 1345,
-      "hits": 134,
-      "hit_rate": 0.0996
+      "total": 1424,
+      "hits": 138,
+      "hit_rate": 0.0969
     }
   },
   "calibrated_parameters": {
     "ensemble_weight_kernel": 0.25,
     "ensemble_weight_state_space": 0.75,
     "covariance": {
-      "student_t_df": 6.0,
+      "student_t_df": 4.5,
       "nat_scale": 0.105,
       "ccaa_scale": 0.0591,
       "prov_scale": 0.0383,
@@ -203,49 +203,49 @@
   },
   "per_election": {
     "2015-12": {
-      "brier_score": 0.106679,
-      "log_score": 0.378228,
+      "brier_score": 0.100129,
+      "log_score": 0.339325,
       "vote_mae_national": 1.3482,
-      "seat_mae_provincial": 0.4221,
-      "seat_mae_national": 5.7384,
-      "coverage_80_provincial_seats": 0.9116,
-      "coverage_95_provincial_seats": 0.9632
+      "seat_mae_provincial": 0.4219,
+      "seat_mae_national": 5.6879,
+      "coverage_80_provincial_seats": 0.9175,
+      "coverage_95_provincial_seats": 0.9705
     },
     "2016-06": {
-      "brier_score": 0.057096,
-      "log_score": 0.187374,
+      "brier_score": 0.056316,
+      "log_score": 0.186868,
       "vote_mae_national": 1.3433,
-      "seat_mae_provincial": 0.3047,
-      "seat_mae_national": 4.2791,
+      "seat_mae_provincial": 0.3107,
+      "seat_mae_national": 4.3876,
       "coverage_80_provincial_seats": 0.9968,
       "coverage_95_provincial_seats": 1.0
     },
     "2019-04": {
-      "brier_score": 0.09311,
-      "log_score": 0.318519,
+      "brier_score": 0.094653,
+      "log_score": 0.324129,
       "vote_mae_national": 0.9295,
-      "seat_mae_provincial": 0.3887,
-      "seat_mae_national": 3.3663,
-      "coverage_80_provincial_seats": 0.9547,
-      "coverage_95_provincial_seats": 0.9821
+      "seat_mae_provincial": 0.3946,
+      "seat_mae_national": 3.6139,
+      "coverage_80_provincial_seats": 0.9517,
+      "coverage_95_provincial_seats": 0.982
     },
     "2019-11": {
-      "brier_score": 0.066312,
-      "log_score": 0.252211,
+      "brier_score": 0.064785,
+      "log_score": 0.23626,
       "vote_mae_national": 0.8437,
-      "seat_mae_provincial": 0.3003,
-      "seat_mae_national": 2.3677,
+      "seat_mae_provincial": 0.3025,
+      "seat_mae_national": 2.2269,
       "coverage_80_provincial_seats": 0.9728,
-      "coverage_95_provincial_seats": 0.9837
+      "coverage_95_provincial_seats": 0.9864
     },
     "2023-07": {
-      "brier_score": 0.063513,
-      "log_score": 0.225617,
+      "brier_score": 0.063212,
+      "log_score": 0.223777,
       "vote_mae_national": 0.7759,
-      "seat_mae_provincial": 0.3299,
-      "seat_mae_national": 2.0208,
-      "coverage_80_provincial_seats": 0.9654,
-      "coverage_95_provincial_seats": 0.9872
+      "seat_mae_provincial": 0.3317,
+      "seat_mae_national": 2.0628,
+      "coverage_80_provincial_seats": 0.9674,
+      "coverage_95_provincial_seats": 0.9909
     }
   }
 }

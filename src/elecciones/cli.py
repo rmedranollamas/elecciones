@@ -570,12 +570,22 @@ def dashboard_command(
     resolved_backtest = backtest_path or (get_outputs_dir() / "backtest_summary.json")
     resolved_ratings = ratings_path or (get_outputs_dir() / "pollster_ratings.csv")
     resolved_output = output or (get_docs_dir() / "index.html")
-    _ = (resolved_input, resolved_backtest, resolved_ratings, resolved_output)
-    typer.echo(
-        "Error: Dashboard compiler (`elecciones.viz.dashboard`) is scheduled for Milestone M5.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
+    try:
+        from elecciones.viz.dashboard import generate_dashboard
+
+        out_path = generate_dashboard(
+            forecast_path=resolved_input,
+            backtest_path=resolved_backtest,
+            ratings_path=resolved_ratings,
+            output_path=resolved_output,
+        )
+        size_kb = out_path.stat().st_size / 1024.0
+        Console().print(
+            f"Generated standalone editorial dashboard -> {out_path} ({size_kb:.1f} KB)"
+        )
+    except (FileNotFoundError, SchemaValidationError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command(name="run-all", cls=_WideHelpCommand)
@@ -614,6 +624,10 @@ def run_all_command(
         int,
         typer.Option("--n-sims", help="Number of Monte Carlo election simulations."),
     ] = DEFAULT_N_SIMS,
+    backtest_sims: Annotated[
+        int,
+        typer.Option("--backtest-sims", help="Monte Carlo draws per race during backtest."),
+    ] = 250,
     seed: Annotated[
         int,
         typer.Option("--seed", help="PRNG seed for Monte Carlo simulation."),
@@ -623,12 +637,81 @@ def run_all_command(
     if respect_blackout and is_in_blackout_window(now):
         typer.echo(BLACKOUT_BANNER)
         return
-    _ = (offline, as_of, engine, exclude_cis_headline, n_sims, seed)
-    typer.echo(
-        "Error: End-to-end `run-all` pipeline wiring is scheduled for Milestone M5.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
+
+    parsed_as_of: date | None = None
+    if as_of is not None:
+        try:
+            parsed_as_of = _parse_strict_cli_iso_date(as_of, "--as-of")
+        except SchemaValidationError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(code=1) from exc
+
+    if engine not in {"ensemble", "kernel", "state_space"}:
+        typer.echo(
+            f"Error: Invalid --engine {engine!r}; expected ensemble, kernel, or state_space",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        from elecciones.backtest.runner import run_backtest
+        from elecciones.ingest import fetch_all
+        from elecciones.models.pollster_ratings import (
+            compute_pollster_ratings,
+            save_pollster_ratings,
+        )
+        from elecciones.models.simulator import run_forecast_simulation
+        from elecciones.schemas import ForecastEngine
+        from elecciones.viz.dashboard import generate_dashboard
+
+        console = Console()
+        console.print("[bold cyan]1/5[/] Ingesting & validating 29-N datasets…")
+        fetch_all(offline=offline)
+
+        console.print("[bold cyan]2/5[/] Computing pollster accuracy & house effects…")
+        ratings = compute_pollster_ratings()
+        ratings_out = save_pollster_ratings(ratings)
+
+        console.print("[bold cyan]3/5[/] Running out-of-sample LOOCV calibration (2015–2023)…")
+        bt_out = get_outputs_dir() / "backtest_summary.json"
+        run_backtest(
+            horizons=(15, 6, 1),
+            n_sims=backtest_sims,
+            seed=seed,
+            output_path=bt_out,
+        )
+
+        console.print(f"[bold cyan]4/5[/] Simulating {n_sims:,} elections ({engine})…")
+        eng_lit: ForecastEngine = (
+            "kernel"
+            if engine == "kernel"
+            else ("state_space" if engine == "state_space" else "ensemble")
+        )
+        fc_out = get_outputs_dir() / "forecast_29n.json"
+        bundle = run_forecast_simulation(
+            as_of=parsed_as_of,
+            engine=eng_lit,
+            exclude_cis_headline=exclude_cis_headline,
+            n_sims=n_sims,
+            seed=seed,
+            backtest_summary_path=bt_out,
+            output_path=fc_out,
+        )
+
+        console.print("[bold cyan]5/5[/] Compiling standalone HTML dashboard…")
+        dash_out = generate_dashboard(
+            forecast_path=fc_out,
+            backtest_path=bt_out,
+            ratings_path=ratings_out,
+            output_path=get_docs_dir() / "index.html",
+        )
+        console.print(
+            f"[bold green]Pipeline complete[/] | As of {bundle.metadata.as_of_date} | "
+            f"MC {bundle.metadata.simulation_runtime_ms:.1f} ms | Dashboard -> {dash_out}"
+        )
+    except (FileNotFoundError, SchemaValidationError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
 
 if __name__ == "__main__":
