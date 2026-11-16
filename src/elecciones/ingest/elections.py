@@ -31,7 +31,6 @@ from elecciones.config import (
     get_raw_cache_dir,
     make_http_client,
 )
-from elecciones.models.dhondt import allocate_dhondt_loreg
 from elecciones.schemas import (
     ALL_CPROS,
     AUTONOMOUS_CITY_CPROS,
@@ -1235,6 +1234,8 @@ def build_congress_from_dat(
     if set(prov_totals.keys()) != set(ALL_CPROS):
         raise SchemaValidationError(f"{election_id}: parsed {len(prov_totals)} provinces != 52")
 
+    from elecciones.models.dhondt import allocate_dhondt_loreg
+
     results: list[ConstituencyElectionResult] = []
     seat_mismatches = 0
     for cpro in ALL_CPROS:
@@ -1407,6 +1408,8 @@ def build_congress_2023_from_boe(
 
     if set(seats_total_by_cpro.keys()) != set(ALL_CPROS):
         raise SchemaValidationError(f"2023-07 BOE tables covered {len(seats_total_by_cpro)} != 52")
+
+    from elecciones.models.dhondt import allocate_dhondt_loreg
 
     spec_by_cpro = {row[0]: row for row in PROVINCE_SPECS}
     results: list[ConstituencyElectionResult] = []

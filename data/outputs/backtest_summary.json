@@ -1,0 +1,251 @@
+{
+  "elections": [
+    "2015-12",
+    "2016-06",
+    "2019-04",
+    "2019-11",
+    "2023-07"
+  ],
+  "total_constituency_races": 260,
+  "total_seats": 1750,
+  "horizons": {
+    "T-15d": {
+      "kernel": {
+        "brier_score": 0.084505,
+        "log_score": 0.295923,
+        "vote_mae_national": 1.1562,
+        "seat_mae_provincial": 0.3706,
+        "seat_mae_national": 3.7841,
+        "coverage_80_provincial_seats": 0.9453,
+        "coverage_95_provincial_seats": 0.9803,
+        "coverage_80_national_seats": 0.8125,
+        "coverage_95_national_seats": 0.9062
+      },
+      "state_space": {
+        "brier_score": 0.078912,
+        "log_score": 0.2753,
+        "vote_mae_national": 1.1282,
+        "seat_mae_provincial": 0.3697,
+        "seat_mae_national": 3.7272,
+        "coverage_80_provincial_seats": 0.962,
+        "coverage_95_provincial_seats": 0.9859,
+        "coverage_80_national_seats": 0.8485,
+        "coverage_95_national_seats": 0.9091
+      },
+      "ensemble": {
+        "brier_score": 0.079167,
+        "log_score": 0.277257,
+        "vote_mae_national": 1.1316,
+        "seat_mae_provincial": 0.3673,
+        "seat_mae_national": 3.7014,
+        "coverage_80_provincial_seats": 0.9618,
+        "coverage_95_provincial_seats": 0.9858,
+        "coverage_80_national_seats": 0.8333,
+        "coverage_95_national_seats": 0.9091
+      }
+    },
+    "T-6d": {
+      "kernel": {
+        "brier_score": 0.08121,
+        "log_score": 0.283494,
+        "vote_mae_national": 1.0701,
+        "seat_mae_provincial": 0.3517,
+        "seat_mae_national": 3.5718,
+        "coverage_80_provincial_seats": 0.9481,
+        "coverage_95_provincial_seats": 0.9773,
+        "coverage_80_national_seats": 0.8,
+        "coverage_95_national_seats": 0.8769
+      },
+      "state_space": {
+        "brier_score": 0.076543,
+        "log_score": 0.269803,
+        "vote_mae_national": 1.0096,
+        "seat_mae_provincial": 0.3494,
+        "seat_mae_national": 3.2912,
+        "coverage_80_provincial_seats": 0.9574,
+        "coverage_95_provincial_seats": 0.9828,
+        "coverage_80_national_seats": 0.8806,
+        "coverage_95_national_seats": 0.9104
+      },
+      "ensemble": {
+        "brier_score": 0.07926,
+        "log_score": 0.283394,
+        "vote_mae_national": 1.0245,
+        "seat_mae_provincial": 0.3496,
+        "seat_mae_national": 3.3829,
+        "coverage_80_provincial_seats": 0.9566,
+        "coverage_95_provincial_seats": 0.9792,
+        "coverage_80_national_seats": 0.8333,
+        "coverage_95_national_seats": 0.8788
+      }
+    },
+    "T-1d": {
+      "kernel": {
+        "brier_score": 0.078664,
+        "log_score": 0.270759,
+        "vote_mae_national": 1.0245,
+        "seat_mae_provincial": 0.3379,
+        "seat_mae_national": 3.2917,
+        "coverage_80_provincial_seats": 0.9448,
+        "coverage_95_provincial_seats": 0.9788,
+        "coverage_80_national_seats": 0.8281,
+        "coverage_95_national_seats": 0.8906
+      },
+      "state_space": {
+        "brier_score": 0.073852,
+        "log_score": 0.25651,
+        "vote_mae_national": 0.9105,
+        "seat_mae_provincial": 0.3336,
+        "seat_mae_national": 2.8848,
+        "coverage_80_provincial_seats": 0.9599,
+        "coverage_95_provincial_seats": 0.9854,
+        "coverage_80_national_seats": 0.8636,
+        "coverage_95_national_seats": 0.9242
+      },
+      "ensemble": {
+        "brier_score": 0.07405,
+        "log_score": 0.25862,
+        "vote_mae_national": 0.939,
+        "seat_mae_provincial": 0.3334,
+        "seat_mae_national": 2.9801,
+        "coverage_80_provincial_seats": 0.9606,
+        "coverage_95_provincial_seats": 0.9835,
+        "coverage_80_national_seats": 0.8462,
+        "coverage_95_national_seats": 0.9231
+      }
+    }
+  },
+  "models": {
+    "kernel": {
+      "brier_score": 0.081521,
+      "log_score": 0.283654,
+      "vote_mae_national": 1.0835,
+      "seat_mae_provincial": 0.3536,
+      "seat_mae_national": 3.5493,
+      "coverage_80_provincial_seats": 0.9461,
+      "coverage_95_provincial_seats": 0.9788,
+      "coverage_80_national_seats": 0.8135,
+      "coverage_95_national_seats": 0.8912
+    },
+    "state_space": {
+      "brier_score": 0.076513,
+      "log_score": 0.267482,
+      "vote_mae_national": 1.016,
+      "seat_mae_provincial": 0.3511,
+      "seat_mae_national": 3.301,
+      "coverage_80_provincial_seats": 0.9598,
+      "coverage_95_provincial_seats": 0.9847,
+      "coverage_80_national_seats": 0.8643,
+      "coverage_95_national_seats": 0.9146
+    },
+    "ensemble": {
+      "brier_score": 0.077552,
+      "log_score": 0.273275,
+      "vote_mae_national": 1.0316,
+      "seat_mae_provincial": 0.3503,
+      "seat_mae_national": 3.3567,
+      "coverage_80_provincial_seats": 0.9597,
+      "coverage_95_provincial_seats": 0.9829,
+      "coverage_80_national_seats": 0.8376,
+      "coverage_95_national_seats": 0.9036
+    }
+  },
+  "tier_calibration": {
+    "seguro": {
+      "total": 2697,
+      "hits": 2680,
+      "hit_rate": 0.9937
+    },
+    "probable": {
+      "total": 1698,
+      "hits": 1554,
+      "hit_rate": 0.9152
+    },
+    "en_juego": {
+      "total": 1614,
+      "hits": 838,
+      "hit_rate": 0.5192
+    },
+    "remoto": {
+      "total": 1345,
+      "hits": 134,
+      "hit_rate": 0.0996
+    }
+  },
+  "calibrated_parameters": {
+    "ensemble_weight_kernel": 0.25,
+    "ensemble_weight_state_space": 0.75,
+    "covariance": {
+      "student_t_df": 6.0,
+      "nat_scale": 0.105,
+      "ccaa_scale": 0.0591,
+      "prov_scale": 0.0383,
+      "bloc_right_scale": 0.0188,
+      "bloc_left_scale": 0.0188,
+      "stage1_cov_weight": 1.0,
+      "blackout_rw_var_per_day": 0.0014,
+      "turnout_nat_sd": 0.14,
+      "turnout_prov_sd": 0.1,
+      "blank_log_sd": 0.22
+    },
+    "empirical_error_hierarchy": {
+      "n_nat_obs": 51.0,
+      "n_ccaa_obs": 251.0,
+      "n_prov_obs": 1273.0,
+      "nat_rmse": 0.22838,
+      "nat_mad": 0.16446,
+      "ccaa_rmse": 0.14882,
+      "ccaa_mad": 0.08293,
+      "prov_rmse": 0.11819,
+      "prov_mad": 0.05378
+    },
+    "n_sims_per_race": 250
+  },
+  "per_election": {
+    "2015-12": {
+      "brier_score": 0.106679,
+      "log_score": 0.378228,
+      "vote_mae_national": 1.3482,
+      "seat_mae_provincial": 0.4221,
+      "seat_mae_national": 5.7384,
+      "coverage_80_provincial_seats": 0.9116,
+      "coverage_95_provincial_seats": 0.9632
+    },
+    "2016-06": {
+      "brier_score": 0.057096,
+      "log_score": 0.187374,
+      "vote_mae_national": 1.3433,
+      "seat_mae_provincial": 0.3047,
+      "seat_mae_national": 4.2791,
+      "coverage_80_provincial_seats": 0.9968,
+      "coverage_95_provincial_seats": 1.0
+    },
+    "2019-04": {
+      "brier_score": 0.09311,
+      "log_score": 0.318519,
+      "vote_mae_national": 0.9295,
+      "seat_mae_provincial": 0.3887,
+      "seat_mae_national": 3.3663,
+      "coverage_80_provincial_seats": 0.9547,
+      "coverage_95_provincial_seats": 0.9821
+    },
+    "2019-11": {
+      "brier_score": 0.066312,
+      "log_score": 0.252211,
+      "vote_mae_national": 0.8437,
+      "seat_mae_provincial": 0.3003,
+      "seat_mae_national": 2.3677,
+      "coverage_80_provincial_seats": 0.9728,
+      "coverage_95_provincial_seats": 0.9837
+    },
+    "2023-07": {
+      "brier_score": 0.063513,
+      "log_score": 0.225617,
+      "vote_mae_national": 0.7759,
+      "seat_mae_provincial": 0.3299,
+      "seat_mae_national": 2.0208,
+      "coverage_80_provincial_seats": 0.9654,
+      "coverage_95_provincial_seats": 0.9872
+    }
+  }
+}

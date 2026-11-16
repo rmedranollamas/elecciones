@@ -341,12 +341,72 @@ def backtest_command(
 ) -> None:
     """Run leave-one-election-out calibration across 2015-D through 2023-J."""
     resolved_output = output or (get_outputs_dir() / "backtest_summary.json")
-    _ = (horizons, n_sims, seed, resolved_output)
-    typer.echo(
-        "Error: LOOCV backtester (`elecciones.backtest.runner`) is scheduled for Milestone M4.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
+    try:
+        parsed_horizons = [int(x.strip()) for x in horizons.split(",") if x.strip()]
+        if not parsed_horizons:
+            raise ValueError("Provide at least one integer horizon in --horizons")
+
+        from elecciones.backtest.runner import run_backtest
+
+        summary = run_backtest(
+            horizons=parsed_horizons,
+            n_sims=n_sims,
+            seed=seed,
+            output_path=resolved_output,
+        )
+        console = Console()
+        table = Table(
+            title=(
+                f"LOOCV Backtest Summary ({len(summary.elections)} elections, "
+                f"{summary.total_constituency_races} races, {summary.total_seats} seats)"
+            ),
+            show_header=True,
+            header_style="bold cyan",
+        )
+        table.add_column("Engine", style="bold")
+        table.add_column("Vote MAE (pp)", justify="right")
+        table.add_column("Seat MAE (Prov)", justify="right")
+        table.add_column("Seat MAE (Nat)", justify="right")
+        table.add_column("Brier", justify="right")
+        table.add_column("LogLoss", justify="right")
+        table.add_column("Cov 80% (P/N)", justify="right")
+        table.add_column("Cov 95% (P/N)", justify="right")
+        for m_name, m in summary.models.items():
+            table.add_row(
+                m_name,
+                f"{m.vote_mae_national:.2f}",
+                f"{m.seat_mae_provincial:.3f}",
+                f"{m.seat_mae_national:.2f}",
+                f"{m.brier_score:.4f}",
+                f"{m.log_score:.4f}",
+                f"{m.coverage_80_provincial_seats:.1%} / {m.coverage_80_national_seats:.1%}",
+                f"{m.coverage_95_provincial_seats:.1%} / {m.coverage_95_national_seats:.1%}",
+            )
+        console.print(table)
+        t_table = Table(
+            title="Out-of-Sample Seat Tier Calibration",
+            show_header=True,
+            header_style="bold magenta",
+        )
+        t_table.add_column("Tier", style="bold")
+        t_table.add_column("Hits / Total", justify="right")
+        t_table.add_column("Hit Rate", justify="right")
+        for t_name in ("seguro", "probable", "en_juego", "remoto"):
+            tb = summary.tier_calibration.get(t_name)
+            if tb:
+                t_table.add_row(t_name, f"{tb.hits} / {tb.total}", f"{tb.hit_rate:.1%}")
+        console.print(t_table)
+        cp = summary.calibrated_parameters
+        cov = cp.get("covariance", {})
+        console.print(
+            f"Calibrated ensemble weights (K/SS): {cp.get('ensemble_weight_kernel')}/"
+            f"{cp.get('ensemble_weight_state_space')} | df={cov.get('student_t_df')} | "
+            f"nat={cov.get('nat_scale')} ccaa={cov.get('ccaa_scale')} prov={cov.get('prov_scale')}"
+        )
+        console.print(f"Saved backtest summary -> {resolved_output}")
+    except (FileNotFoundError, SchemaValidationError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command(name="forecast", cls=_WideHelpCommand)
@@ -385,18 +445,105 @@ def forecast_command(
 ) -> None:
     """Run Stages 1-4 to generate forecast_29n.json across all 52 constituencies."""
     resolved_output = output or (get_outputs_dir() / "forecast_29n.json")
+    parsed_as_of: date | None = None
     if as_of is not None:
         try:
-            _parse_strict_cli_iso_date(as_of, "--as-of")
+            parsed_as_of = _parse_strict_cli_iso_date(as_of, "--as-of")
         except SchemaValidationError as exc:
             typer.echo(f"Error: {exc}", err=True)
             raise typer.Exit(code=1) from exc
-    _ = (as_of, engine, exclude_cis_headline, n_sims, seed, manual_polls, resolved_output)
-    typer.echo(
-        "Error: Forecast simulator (`elecciones.models.simulator`) is scheduled for Milestone M4.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
+
+    if engine not in {"ensemble", "kernel", "state_space"}:
+        typer.echo(
+            f"Error: Invalid --engine {engine!r}; expected ensemble, kernel, or state_space",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        from elecciones.models.simulator import run_forecast_simulation
+        from elecciones.schemas import ForecastEngine
+
+        eng_lit: ForecastEngine = (
+            "kernel"
+            if engine == "kernel"
+            else ("state_space" if engine == "state_space" else "ensemble")
+        )
+        bundle = run_forecast_simulation(
+            as_of=parsed_as_of,
+            engine=eng_lit,
+            exclude_cis_headline=exclude_cis_headline,
+            n_sims=n_sims,
+            seed=seed,
+            manual_polls_path=manual_polls,
+            output_path=resolved_output,
+        )
+        console = Console()
+        table = Table(
+            title=(
+                f"Spain 29-N Congress Forecast (as of {bundle.metadata.as_of_date}, "
+                f"{bundle.metadata.n_sims:,} sims, {bundle.metadata.engine})"
+            ),
+            show_header=True,
+            header_style="bold cyan",
+        )
+        table.add_column("Party", style="bold")
+        table.add_column("Vote % (P10–P90)", justify="right")
+        table.add_column("Mean Seats", justify="right")
+        table.add_column("80% Range", justify="right")
+        table.add_column("Seguro", justify="right")
+        table.add_column("Probable", justify="right")
+        table.add_column("En juego", justify="right")
+
+        vs_map = bundle.national["vote_shares"]
+        seats_map = bundle.national["seats"]
+        for pid, s_obj in seats_map.items():
+            vs = vs_map.get(pid, {})
+            if s_obj["p95"] == 0 and vs.get("mean", 0.0) < 0.005:
+                continue
+            table.add_row(
+                pid,
+                f"{vs['mean'] * 100:.1f}% ({vs['p10'] * 100:.1f}–{vs['p90'] * 100:.1f})",
+                f"{s_obj['mean']:.1f}",
+                f"{s_obj['p10']}–{s_obj['p90']} (med {s_obj['median']})",
+                str(s_obj["seguros"]),
+                str(s_obj["probables"]),
+                str(s_obj["en_juego"]),
+            )
+        console.print(table)
+
+        inv_table = Table(
+            title="Art. 99 CE Investiture Probabilities",
+            show_header=True,
+            header_style="bold green",
+        )
+        inv_table.add_column("Ballot", justify="center")
+        inv_table.add_column("Coalition Scenario", style="bold")
+        inv_table.add_column("Prob", justify="right")
+        inv_table.add_column("Median", justify="right")
+        for pact in bundle.investiture.first_ballot.values():
+            inv_table.add_row(
+                "1st (>=176)",
+                pact.label,
+                f"{pact.prob:.1%}",
+                f"{pact.median_seats} ({pact.p10}–{pact.p90})",
+            )
+        for scen in bundle.investiture.second_ballot.values():
+            inv_table.add_row(
+                "2nd (Sí>No)",
+                scen.label,
+                f"{scen.prob:.1%}",
+                f"{scen.median_margin:+d} margin",
+            )
+        console.print(inv_table)
+        console.print(
+            f"Art. 99.5 Deadlock Risk: {bundle.investiture.deadlock_prob:.1%} | "
+            f"MC Runtime: {bundle.metadata.simulation_runtime_ms:.1f} ms | "
+            f"Saved -> {resolved_output}"
+        )
+    except (FileNotFoundError, SchemaValidationError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command(name="dashboard", cls=_WideHelpCommand)
