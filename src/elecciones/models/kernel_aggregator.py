@@ -27,7 +27,12 @@ from elecciones.config import (
     ModelHyperparameters,
 )
 from elecciones.models.pollster_ratings import is_benchmark_or_excluded_pollster
-from elecciones.schemas import ForecastEngine, PollRecord, PollsterRatingRecord
+from elecciones.schemas import (
+    ForecastEngine,
+    PollRecord,
+    PollsterRatingRecord,
+    RegionalPollRecord,
+)
 
 NATIONAL_2026_TRACKED_PARTIES: Final[tuple[str, ...]] = (
     "PP",
@@ -135,7 +140,7 @@ def filter_polls_as_of(
     return out
 
 
-def compute_wave_overlap_penalties(polls: Sequence[PollRecord]) -> np.ndarray:
+def compute_wave_overlap_penalties(polls: Sequence[PollRecord | RegionalPollRecord]) -> np.ndarray:
     """Compute within-pollster fieldwork overlap discount ``u_i = 1 / sum_j overlap(i, j)``.
 
     For each pollster, every pair ``(i, j)`` sharing ``d >= 1`` overlapping fieldwork days

@@ -1067,10 +1067,16 @@
           }
           const targetSum = Math.max(0.85, 1.0 - con.blank_share);
           const normShares = {};
+          const seatCands = {};
+          let effBlank = Number(con.blank_share || 0);
           for (const [p, adj] of Object.entries(candRaw)) {
-            normShares[p] = candSum > 0 ? (adj / candSum) * targetSum : 0;
+            const sh = candSum > 0 ? (adj / candSum) * targetSum : 0;
+            normShares[p] = sh;
+            // Keep synthetic residual "OTROS" in valid votes without winning individual seats
+            if (p === "OTROS") effBlank += sh;
+            else seatCands[p] = sh;
           }
-          const dSeats = allocateDistrictDhondt(con.seats_2026, normShares, con.blank_share, isCity);
+          const dSeats = allocateDistrictDhondt(con.seats_2026, seatCands, effBlank, isCity);
           const w = con.validos_prior || 100000;
           totValid += w;
           for (const [p, s] of Object.entries(normShares)) {
@@ -1088,19 +1094,41 @@
         return { natSeats, natShares, distResults };
       }
 
+      function resolveStageMeanShares(engName) {
+        if (STAGE1_CMP[engName] && STAGE1_CMP[engName].mean_shares) {
+          return STAGE1_CMP[engName].mean_shares;
+        }
+        if (engName === "ensemble" && STAGE1_CMP.kernel && STAGE1_CMP.state_space) {
+          const w = STAGE1_CMP.weights || { kernel: 0.45, state_space: 0.55 };
+          const wk = Number(w.kernel || 0.45);
+          const ws = Number(w.state_space || 0.55);
+          const wt = Math.max(1e-12, wk + ws);
+          const ks = STAGE1_CMP.kernel.mean_shares || {};
+          const ss = STAGE1_CMP.state_space.mean_shares || {};
+          const out = {};
+          for (const pid of DATA.party_order) {
+            const kv = Number(ks[pid] || 0);
+            const sv = Number(ss[pid] !== undefined ? ss[pid] : kv);
+            out[pid] = (wk * kv + ws * sv) / wt;
+          }
+          return out;
+        }
+        return Object.fromEntries(
+          DATA.party_order.map(p => [p, Number(((DATA.national.vote_shares || {})[p] || {}).mean || 0)])
+        );
+      }
+
       function computeEngineCisMultipliers() {
         const mult = {};
-        const baseStage = STAGE1_CMP[BASE_ENGINE] || { mean_shares: {} };
-        const curStage = STAGE1_CMP[STATE.engine] || baseStage;
-        const engShares = curStage.mean_shares || {};
-        const baseEngShares = baseStage.mean_shares || {};
+        const baseEngShares = resolveStageMeanShares(BASE_ENGINE);
+        const engShares = resolveStageMeanShares(STATE.engine);
 
         const cisBase = CIS_SENS[BASE_CIS === "without" ? "without_cis" : "with_cis"] || { mean_shares: {} };
         const cisCur = CIS_SENS[STATE.cis === "without" ? "without_cis" : "with_cis"] || cisBase;
 
         for (const pid of DATA.party_order) {
           const bE = Number(baseEngShares[pid] || 0);
-          const cE = Number(engShares[pid] || bE);
+          const cE = Number(engShares[pid] !== undefined ? engShares[pid] : bE);
           const rE = bE > 0.002 ? cE / bE : 1.0;
 
           const bC = Number((cisBase.mean_shares || {})[pid] || 0);
@@ -1264,12 +1292,20 @@
         const wCis = (CIS_SENS.with_cis || {}).mean_shares || {};
         const woCis = (CIS_SENS.without_cis || {}).mean_shares || {};
         const keyP = ["PP", "PSOE", "VOX", "FA", "PODEMOS", "SALF"];
-        strip.innerHTML = `<strong>Impacto CIS en voto nacional (Con CIS vs Sin CIS):</strong> ` +
+        const wPctCis = CIS_SENS.cis_weight_pct !== undefined ? Number(CIS_SENS.cis_weight_pct) : null;
+        const heCis = CIS_SENS.cis_house_effect_pp || {};
+        let heNote = "";
+        if (wPctCis !== null || Object.keys(heCis).length > 0) {
+          const wTxt = wPctCis !== null ? `Peso efectivo CIS en Etapa 1: <strong>${wPctCis.toFixed(2)}%</strong>` : "";
+          const heTxt = ["PP", "PSOE", "VOX"].filter(p => p in heCis).map(p => `${esc(pShort(p))} ${heCis[p] >= 0 ? "+" : ""}${Number(heCis[p]).toFixed(2)} pp`).join(", ");
+          heNote = `<div class="muted" style="margin-top:4px;font-size:11px;">${wTxt}${wTxt && heTxt ? " · " : ""}${heTxt ? `Sesgo de casa Jackman descontado al CIS: ${heTxt}` : ""}${DATA.metadata.as_of_date ? " (el barómetro #3584 aporta principalmente estructura geográfica en Etapa 2)." : ""}</div>`;
+        }
+        strip.innerHTML = `<strong>Impacto CIS en Etapa 1 (Con CIS vs Sin CIS):</strong> ` +
           keyP.filter(p => p in wCis && p in woCis).map(p => {
             const diff = (wCis[p] - woCis[p]) * 100;
             const sign = diff >= 0 ? "+" : "";
             return `<span style="margin-right:10px;white-space:nowrap;">${esc(pShort(p))}: <strong class="tabular">${sign}${diff.toFixed(2)} pp</strong></span>`;
-          }).join("");
+          }).join("") + heNote;
 
         // Refresh Hero KPI strip cleanly for active mode
         const heroEl = document.getElementById("hero-kpis");
@@ -1658,19 +1694,47 @@
       }
 
       // LIVE WHAT-IF SWING & ART. 99 PACT BUILDER
+      function computeActiveElectorateFrac() {
+        const totV = DATA.constituencies.reduce((acc, c) => acc + Number(c.validos_prior || 0), 0);
+        const actV = {};
+        for (const con of DATA.constituencies) {
+          const w = Number(con.validos_prior || 0);
+          for (const [p, sh] of Object.entries(con.final_shares || {})) {
+            if (Number(sh) > 0) actV[p] = (actV[p] || 0) + w;
+          }
+        }
+        const frac = {};
+        for (const pid of DATA.party_order) {
+          frac[pid] = totV > 0 ? Math.min(1.0, (actV[pid] || 0) / totV) : 1.0;
+        }
+        return frac;
+      }
+
       function renderWhatIfSliders() {
         const vsMap = DATA.national.vote_shares;
+        const engMult = computeEngineCisMultipliers();
+        const activeFrac = computeActiveElectorateFrac();
         const container = document.getElementById("whatif-sliders");
+        const boundsByPid = {};
+
         container.innerHTML = SLIDER_PARTIES.map(pid => {
-          const basePct = Number((vsMap[pid] || {}).mean || 0) * 100;
-          const dVal = Number(STATE.swings[pid] || 0);
+          const basePct = Number((vsMap[pid] || {}).mean || 0) * 100 * Number(engMult[pid] !== undefined ? engMult[pid] : 1.0);
+          const cov = Math.max(0.03, activeFrac[pid] !== undefined ? activeFrac[pid] : 1.0);
+          const maxUp = cov >= 0.90
+            ? 8.0
+            : Math.min(8.0, Math.max(0.8, Math.round(Math.max(0.8, cov * 30.0) * 5) / 5));
+          const maxDown = Math.min(8.0, Math.max(0.4, Math.round(Math.max(0.4, basePct * 0.9) * 5) / 5));
+          const dVal = Math.max(-maxDown, Math.min(maxUp, Number(STATE.swings[pid] || 0)));
+          STATE.swings[pid] = dVal;
+          boundsByPid[pid] = { basePct };
+          const curShown = Math.max(0.1, basePct + dVal);
           return `
             <div class="slider-item">
               <div class="slider-top">
                 <span class="party-chip"><span class="dot" style="background:${pColor(pid)}"></span>${esc(pShort(pid))}</span>
-                <span class="tabular" id="sl-lbl-${esc(pid)}">${basePct.toFixed(1)}% (${dVal >= 0 ? "+" : ""}${dVal.toFixed(1)} pp)</span>
+                <span class="tabular" id="sl-lbl-${esc(pid)}">${curShown.toFixed(1)}% (${dVal >= 0 ? "+" : ""}${dVal.toFixed(1)} pp)</span>
               </div>
-              <input type="range" min="-8" max="8" step="0.2" value="${dVal}" data-pid="${esc(pid)}" aria-label="Desplazamiento para ${esc(pShort(pid))}" />
+              <input type="range" min="${-maxDown}" max="${maxUp}" step="0.2" value="${dVal}" data-pid="${esc(pid)}" aria-label="Desplazamiento para ${esc(pShort(pid))}" />
             </div>
           `;
         }).join("");
@@ -1679,7 +1743,7 @@
           inp.addEventListener("input", () => {
             const pid = inp.getAttribute("data-pid");
             STATE.swings[pid] = Number(inp.value);
-            const basePct = Number((vsMap[pid] || {}).mean || 0) * 100;
+            const basePct = (boundsByPid[pid] || {}).basePct || 0;
             document.getElementById("sl-lbl-" + pid).textContent =
               `${Math.max(0.1, basePct + STATE.swings[pid]).toFixed(1)}% (${STATE.swings[pid] >= 0 ? "+" : ""}${STATE.swings[pid].toFixed(1)} pp)`;
             updateWhatIfAndPact();
@@ -1689,13 +1753,15 @@
 
       function computeCurrentWhatIf() {
         const vsMap = DATA.national.vote_shares;
+        const engMult = computeEngineCisMultipliers();
         const mult = {};
         let movedCount = 0;
         for (const pid of DATA.party_order) {
           const base = Number((vsMap[pid] || {}).mean || 0);
+          const cfBase = base * Number(engMult[pid] !== undefined ? engMult[pid] : 1.0);
           const delta = Number(STATE.swings[pid] || 0) / 100;
           if (Math.abs(delta) > 1e-6) movedCount += 1;
-          mult[pid] = base > 0.002 ? Math.max(0.05, (base + delta) / base) : 1.0;
+          mult[pid] = base > 0.002 ? Math.max(0.05, (cfBase + delta) / base) : 1.0;
         }
         const solved = solveShiftedChamber(mult);
         return { solved, mult, movedCount };
@@ -1753,14 +1819,18 @@
       function updateWhatIfAndPact() {
         const vsMap = DATA.national.vote_shares;
         const seatsMap = DATA.national.seats;
+        const cf = isCounterfactualMode();
         const { solved, movedCount } = computeCurrentWhatIf();
-        const baseDet = movedCount === 0
+        const baseDet = (movedCount === 0 && !cf)
           ? solved
           : solveShiftedChamber(Object.fromEntries(DATA.party_order.map(p => [p, 1.0])));
 
         // Update What-If summary & table
+        const modePrefix = cf ? `Modo ${STATE.engine.toUpperCase()} (${STATE.cis === "with" ? "con CIS" : "sin CIS"}) · ` : "";
         document.getElementById("whatif-summary").textContent =
-          movedCount === 0 ? "Escenario base determinista (0 variaciones)" : `${movedCount} partidos ajustados · 350 escaños LOREG`;
+          movedCount === 0
+            ? (cf ? `${modePrefix}0 variaciones adicionales` : "Escenario base determinista (0 variaciones)")
+            : `${modePrefix}${movedCount} partidos ajustados · 350 escaños LOREG`;
 
         const wiRows = DATA.party_order.filter(pid => (solved.natSeats[pid] || 0) > 0 || (seatsMap[pid] && seatsMap[pid].p95 > 0) || Math.abs(STATE.swings[pid] || 0) > 0.05);
         wiRows.sort((a, b) => (solved.natSeats[b] || 0) - (solved.natSeats[a] || 0) || (solved.natShares[b] || 0) - (solved.natShares[a] || 0));
@@ -1804,9 +1874,34 @@
         let pass1 = 0, pass2 = 0;
         const sample = DATA.sim_sample || [];
         for (const draw of sample) {
-          let sy = 0, sn = 0;
+          const rawAdj = {};
+          let adjSum = 0;
           for (const [pid, rawS] of Object.entries(draw.seats || {})) {
-            const sAdj = Math.max(0, Number(rawS) + (detShiftSeats[pid] || 0));
+            const v = Math.max(0, Number(rawS) + (detShiftSeats[pid] || 0));
+            if (v > 0) {
+              rawAdj[pid] = v;
+              adjSum += v;
+            }
+          }
+          // Restore exact 350 total when clamping negative shifts on small parties
+          let remDiff = 350 - adjSum;
+          if (remDiff !== 0 && adjSum > 0) {
+            const posKeys = Object.keys(rawAdj).sort((a, b) => rawAdj[b] - rawAdj[a] || a.localeCompare(b));
+            let k = 0;
+            while (remDiff !== 0 && posKeys.length > 0 && k < 700) {
+              const pKey = posKeys[k % posKeys.length];
+              if (remDiff > 0) {
+                rawAdj[pKey] += 1;
+                remDiff -= 1;
+              } else if (rawAdj[pKey] > 0) {
+                rawAdj[pKey] -= 1;
+                remDiff += 1;
+              }
+              k += 1;
+            }
+          }
+          let sy = 0, sn = 0;
+          for (const [pid, sAdj] of Object.entries(rawAdj)) {
             const v = STATE.pactVotes[pid] || "no";
             if (v === "yes") sy += sAdj;
             else if (v === "no") sn += sAdj;
@@ -1959,28 +2054,38 @@
       }
 
       // EVENT WIRING
+      function syncModeButtons() {
+        document.querySelectorAll("#engine-toggle .seg-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-engine") === STATE.engine));
+        document.querySelectorAll("#cis-toggle .seg-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-cis") === STATE.cis));
+      }
+
       document.querySelectorAll("#engine-toggle .seg-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           STATE.engine = btn.getAttribute("data-engine");
-          document.querySelectorAll("#engine-toggle .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+          syncModeButtons();
           renderHemicycleAndNational();
+          renderWhatIfSliders();
+          updateWhatIfAndPact();
         });
       });
 
       document.querySelectorAll("#cis-toggle .seg-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           STATE.cis = btn.getAttribute("data-cis");
-          document.querySelectorAll("#cis-toggle .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+          syncModeButtons();
           renderHemicycleAndNational();
+          renderWhatIfSliders();
+          updateWhatIfAndPact();
         });
       });
 
       document.getElementById("btn-reset-mode").addEventListener("click", () => {
         STATE.engine = BASE_ENGINE;
         STATE.cis = BASE_CIS;
-        document.querySelectorAll("#engine-toggle .seg-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-engine") === STATE.engine));
-        document.querySelectorAll("#cis-toggle .seg-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-cis") === STATE.cis));
+        syncModeButtons();
         renderHemicycleAndNational();
+        renderWhatIfSliders();
+        updateWhatIfAndPact();
       });
 
       document.querySelectorAll("#map-mode-toggle .seg-btn").forEach(btn => {
@@ -2027,6 +2132,7 @@
       });
 
       // INITIAL RENDER
+      syncModeButtons();
       renderHemicycleAndNational();
       renderCartogram();
       renderBattlegrounds();

@@ -246,19 +246,28 @@ def run_forecast_simulation(
         seat_slots.sort(key=lambda s: (-s.prob, s.party, s.rank))
 
         # Expected valid vote counts on deterministic final_shares -> realistic gap_abs & quotients
+        # Exclude catch-all bin "OTROS" from seat allocation while retaining its vote mass inside
+        # valid_votes (via blank_votes) so LOREG 3% barriers and runner-up margins stay exact.
         exp_v = float(max(1, dist.validos_prior))
         active_votes = {
             party_ids[j]: float(s2.final_matrix[i, j]) * exp_v
             for j in range(n_p)
-            if s2.active_mask[i, j] and s2.final_matrix[i, j] > 0.0
+            if s2.active_mask[i, j]
+            and s2.final_matrix[i, j] > 0.0
+            and party_ids[j] != "OTROS"
         }
+        otros_votes = (
+            float(s2.final_matrix[i, party_ids.index("OTROS")]) * exp_v
+            if "OTROS" in party_ids
+            else 0.0
+        )
         if not active_votes:
             active_votes = {"PSOE": exp_v * 0.5, "PP": exp_v * 0.5}
         alloc_det = allocate_dhondt_loreg(
             AllocationInput(
                 seats=m_c,
                 party_votes=active_votes,
-                blank_votes=float(dist.blank_share) * exp_v,
+                blank_votes=float(dist.blank_share) * exp_v + otros_votes,
                 is_autonomous_city=(cpro in AUTONOMOUS_CITY_CPROS),
                 cpro=cpro,
             ),

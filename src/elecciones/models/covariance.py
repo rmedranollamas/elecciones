@@ -300,11 +300,14 @@ def run_hierarchical_monte_carlo(
     parties_catalog: PartiesCatalog | None = None,
     hyperparams: ModelHyperparameters = DEFAULT_HYPERPARAMETERS,
     n_workers: int | None = None,
+    non_seat_parties: Sequence[str] = ("OTROS",),
 ) -> SimulationArrays:
     """Execute hierarchical Student-t Monte Carlo draws + exact LOREG D'Hondt across 52 districts.
 
     Guarantees:
     - Exact zero probability outside ``proj.active_mask`` (``M_{c,p} == 0 => seats == 0``)
+    - Catch-all residual buckets in ``non_seat_parties`` (default ``("OTROS",)``) stay in
+      valid vote shares/denominators without eligibility to clear thresholds or win seats
     - Reproducible across identical ``(seed, n_sims, config)`` calls via ``SeedSequence``
     - Completes ``50,000`` draws x ``52`` constituencies in ``< 1.5s`` on standard CPUs.
     """
@@ -343,7 +346,13 @@ def run_hierarchical_monte_carlo(
     is_city_arr = np.asarray(proj.city_vec, dtype=bool)
     seats_vec = np.asarray(proj.seats_vec, dtype=np.int32)
     seats_a = seats_vec[act_r][:, None]
-    thresh_a = np.where(is_city_arr[act_r], np.float32(0.0), np.float32(0.03))[:, None]
+    non_seat_set = frozenset(non_seat_parties)
+    non_seat_a = np.array([proj.party_ids[j] in non_seat_set for j in act_c], dtype=bool)
+    thresh_a = np.where(
+        non_seat_a,
+        np.float32(1.01),
+        np.where(is_city_arr[act_r], np.float32(0.0), np.float32(0.03)),
+    )[:, None]
 
     base_log_a = np.log(np.maximum(1e-9, proj.final_matrix[act_r, act_c])).astype(np.float32)
     base_blank_32 = np.maximum(1e-4, proj.final_blank).astype(np.float32)
@@ -473,7 +482,7 @@ def run_hierarchical_monte_carlo(
             aj = active_cols[c]
             sc = int(seats_vec[c])
             if bool(is_city_arr[c]):
-                city_sub = eta_t[cs:ce]
+                city_sub = np.where(non_seat_a[cs:ce, None], np.float32(-1.0), eta_t[cs:ce])
                 if not np.any(city_sub > np.float32(0.0)):
                     continue
                 w = np.argmax(city_sub, axis=0)

@@ -15,6 +15,7 @@ from elecciones.models.kernel_aggregator import (
     DEFAULT_NATIONAL_BLANK_SHARE,
     Stage1Result,
     aggregate_kernel,
+    compute_poll_weights,
     filter_polls_as_of,
 )
 from elecciones.models.state_space import smooth_state_space
@@ -132,7 +133,7 @@ def combine_stage1_results(
         "weights": {"kernel": round(wk, 4), "state_space": round(ws, 4)},
     }
 
-    return Stage1Result(
+    res = Stage1Result(
         as_of_date=kernel_res.as_of_date,
         target_election_date=kernel_res.target_election_date,
         engine="ensemble",
@@ -150,6 +151,8 @@ def combine_stage1_results(
         trend_series=_blend_trend_series(kernel_res, ss_res, wk, ws),
         stage1_comparison=comparison,
     )
+    comparison["ensemble"] = res.to_summary_dict()
+    return res
 
 
 def _summarize_latest_raw_cis(polls: Sequence[PollRecord], as_of: date) -> dict[str, Any] | None:
@@ -199,7 +202,8 @@ def run_stage1(
     )
 
     if engine == "kernel":
-        # Populate state_space comparison in headline mode; skip extra work in fast backtests
+        # Populate state_space/ensemble comparison in headline mode;
+        # skip extra work in fast backtests
         if compute_cis_sensitivity:
             ss_res = smooth_state_space(
                 polls,
@@ -213,9 +217,16 @@ def run_stage1(
                 reference_pollsters=reference_pollsters,
                 blank_share=blank_share,
             )
+            ens_res = combine_stage1_results(
+                kernel_res,
+                ss_res,
+                w_kernel=hyperparams.ensemble_weight_kernel,
+                w_state_space=hyperparams.ensemble_weight_state_space,
+            )
             comp = {
                 "kernel": kernel_res.to_summary_dict(),
                 "state_space": ss_res.to_summary_dict(),
+                "ensemble": ens_res.to_summary_dict(),
                 "weights": {"kernel": 1.0, "state_space": 0.0},
             }
             chosen = replace(kernel_res, stage1_comparison=comp)
@@ -239,6 +250,14 @@ def run_stage1(
             "state_space": ss_res.to_summary_dict(),
             "weights": {"kernel": 0.0, "state_space": 1.0},
         }
+        if compute_cis_sensitivity:
+            ens_res = combine_stage1_results(
+                kernel_res,
+                ss_res,
+                w_kernel=hyperparams.ensemble_weight_kernel,
+                w_state_space=hyperparams.ensemble_weight_state_space,
+            )
+            comp["ensemble"] = ens_res.to_summary_dict()
         chosen = replace(ss_res, stage1_comparison=comp)
     else:
         ss_res = smooth_state_space(
@@ -284,10 +303,35 @@ def run_stage1(
             with_cis = chosen
             without_cis = chosen
 
+        ratings_map = {r.pollster: r for r in ratings} if ratings else {}
+        if all_up_to:
+            w_all, _ = compute_poll_weights(
+                all_up_to,
+                as_of,
+                chosen.target_election_date,
+                ratings_map=ratings_map,
+                hyperparams=hyperparams,
+                exclude_cis_headline=False,
+            )
+            tot_w = max(1e-12, float(w_all.sum()))
+            cis_w_sum = sum(float(w_all[i]) for i, p in enumerate(all_up_to) if p.is_cis)
+            cis_w_pct = 100.0 * cis_w_sum / tot_w
+        else:
+            cis_w_pct = 0.0
+
+        cis_he_raw = with_cis.house_effects.get("CIS", {})
+        cis_he_pp = {
+            k: round(float(cis_he_raw[k]) * 100.0, 3)
+            for k in ("PP", "PSOE", "VOX", "FA", "PODEMOS", "SALF")
+            if k in cis_he_raw
+        }
+
         cis_sens: dict[str, Any] = {
             "headline_excludes_cis": exclude_cis_headline,
             "with_cis": with_cis.to_summary_dict(),
             "without_cis": without_cis.to_summary_dict(),
+            "cis_weight_pct": round(float(cis_w_pct), 4),
+            "cis_house_effect_pp": cis_he_pp,
             "pp_diff_pp": round(
                 (with_cis.mean_shares.get("PP", 0.0) - without_cis.mean_shares.get("PP", 0.0))
                 * 100.0,

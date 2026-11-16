@@ -34,6 +34,7 @@ from elecciones.config import (
 from elecciones.ingest.cis import load_cis_3584_provincial, load_coalition_transfers
 from elecciones.ingest.elections import load_congress_results
 from elecciones.ingest.wikipedia import load_regional_polls
+from elecciones.models.kernel_aggregator import compute_wave_overlap_penalties
 from elecciones.models.pollster_ratings import (
     _PARTISAN_INTERNAL_POLLSTERS,
     is_benchmark_or_excluded_pollster,
@@ -730,6 +731,7 @@ def shrink_provinces_with_cis_and_regional_polls(
 
     # Track marginal precision N_eff per district after CIS blending
     eff_n_c = np.full(n_c, n0, dtype=np.float64)
+    did_shrink = False
 
     # Step 3A: Precision-weighted blend with nationally de-biased CIS #3584 provincial shares
     if cis_prov:
@@ -751,6 +753,7 @@ def shrink_provinces_with_cis_and_regional_polls(
             cur[i] = _exact_normalize_row(cur[i], active_mask[i], float(blank_vec[i]))
             cis_weights[i] = w_cis / (n0 + w_cis)
             eff_n_c[i] += w_cis
+            did_shrink = True
 
     # Step 3B: Contemporaneous 2026 CCAA & Provincial polls <= as_of
     if regional_polls:
@@ -762,6 +765,13 @@ def shrink_provinces_with_cis_and_regional_polls(
             and (rp.pub_date is None or rp.pub_date <= as_of)
             and (as_of - rp.fieldwork_end).days <= 210
         ]
+        # Track CCAA-level waves to discount duplicate provincial breakdowns from the same survey
+        ccaa_poll_keys = {
+            (rp.pollster, rp.fieldwork_end, rp.scope_code)
+            for rp in eligible
+            if rp.scope_type == "ccaa"
+        }
+
         # CCAA-level consensus adjustments first, then finer province-level blends
         scope_groups: dict[tuple[str, str], list[RegionalPollRecord]] = defaultdict(list)
         for rp in eligible:
@@ -769,13 +779,57 @@ def shrink_provinces_with_cis_and_regional_polls(
 
         def _poll_precision(rp: RegionalPollRecord) -> float:
             age_d = max(0, (as_of - rp.fieldwork_end).days)
-            rec = math.exp(-age_d / 55.0)
+            rec = math.exp(-age_d / 32.0)
             n_cap = float(min(rp.sample_size or 800, 3000))
             rating = ratings_map.get(rp.pollster) if ratings_map else None
             qual = max(0.25, rating.grade_weight) if rating else 1.0
             if rp.pollster in _PARTISAN_INTERNAL_POLLSTERS or rp.pollster == "ERC":
                 qual *= 0.15
             return rec * qual * (n_cap / max(0.5, hyperparams.stage2_regional_divisor))
+
+        def _accumulate_scope_polls(
+            plist: list[RegionalPollRecord],
+            codauto_c: str,
+            mask_map: Mapping[str, int],
+            *,
+            apply_ccaa_dup_discount: bool,
+        ) -> tuple[dict[str, float], dict[str, float]]:
+            overlap_u = compute_wave_overlap_penalties(plist)
+            party_num: dict[str, float] = defaultdict(float)
+            party_den: dict[str, float] = defaultdict(float)
+            for idx_rp, rp in enumerate(plist):
+                w = _poll_precision(rp) * float(overlap_u[idx_rp])
+                if (
+                    apply_ccaa_dup_discount
+                    and (rp.pollster, rp.fieldwork_end, codauto_c) in ccaa_poll_keys
+                ):
+                    w *= 0.55
+                if w <= 1e-12:
+                    continue
+                has_fa = "FA" in rp.party_shares
+                has_fv = "COMPROMIS_FV" in rp.party_shares
+                has_ad = "ADELANTE" in rp.party_shares
+                has_upc = "UPC" in rp.party_shares
+                # Aggregate mapped columns within the same poll before adding weight to denominator
+                # so split lists mapping to one coalition (e.g. Navarre PP+UPN -> UPN_PP)
+                # sum cleanly.
+                rp_mapped: dict[str, float] = defaultdict(float)
+                for raw_p, val in rp.party_shares.items():
+                    mapped = _canon_regional_poll_party(
+                        raw_p,
+                        codauto_c,
+                        mask_map,
+                        has_explicit_fa=has_fa,
+                        has_explicit_fv=has_fv,
+                        has_explicit_adelante=has_ad,
+                        has_explicit_upc=has_upc,
+                    )
+                    for canon_p, factor in mapped.items():
+                        rp_mapped[canon_p] += val * factor
+                for canon_p, mapped_val in rp_mapped.items():
+                    party_num[canon_p] += w * mapped_val
+                    party_den[canon_p] += w
+            return party_num, party_den
 
         # CCAA polls (ratio-adjust CCAA mean while preserving intra-CCAA geography)
         for (st, sc), plist in sorted(scope_groups.items()):
@@ -790,30 +844,12 @@ def shrink_provinces_with_cis_and_regional_polls(
                 party_ids[j]: int(np.any(active_mask[member_idx, j]))
                 for j in range(n_p)
             }
-            party_num: dict[str, float] = defaultdict(float)
-            party_den: dict[str, float] = defaultdict(float)
-            for rp in plist:
-                w = _poll_precision(rp)
-                has_fa = "FA" in rp.party_shares
-                has_fv = "COMPROMIS_FV" in rp.party_shares
-                has_ad = "ADELANTE" in rp.party_shares
-                has_upc = "UPC" in rp.party_shares
-                for raw_p, val in rp.party_shares.items():
-                    mapped = _canon_regional_poll_party(
-                        raw_p,
-                        codauto_c,
-                        union_mask,
-                        has_explicit_fa=has_fa,
-                        has_explicit_fv=has_fv,
-                        has_explicit_adelante=has_ad,
-                        has_explicit_upc=has_upc,
-                    )
-                    for canon_p, factor in mapped.items():
-                        party_num[canon_p] += w * (val * factor)
-                        party_den[canon_p] += w
-
+            party_num, party_den = _accumulate_scope_polls(
+                plist, codauto_c, union_mask, apply_ccaa_dup_discount=False
+            )
             if not party_den:
                 continue
+            did_shrink = True
             mw = turnout_weights[member_idx]
             mw_norm = mw / max(1e-12, float(mw.sum()))
             ccaa_cur_mean = mw_norm @ cur[member_idx]  # (P,)
@@ -844,30 +880,12 @@ def shrink_provinces_with_cis_and_regional_polls(
             ci = c_idx[sc]
             codauto_c = consts_map[sc].codauto
             mask_map = {party_ids[j]: int(active_mask[ci, j]) for j in range(n_p)}
-            party_num = defaultdict(float)
-            party_den = defaultdict(float)
-            for rp in plist:
-                w = _poll_precision(rp)
-                has_fa = "FA" in rp.party_shares
-                has_fv = "COMPROMIS_FV" in rp.party_shares
-                has_ad = "ADELANTE" in rp.party_shares
-                has_upc = "UPC" in rp.party_shares
-                for raw_p, val in rp.party_shares.items():
-                    mapped = _canon_regional_poll_party(
-                        raw_p,
-                        codauto_c,
-                        mask_map,
-                        has_explicit_fa=has_fa,
-                        has_explicit_fv=has_fv,
-                        has_explicit_adelante=has_ad,
-                        has_explicit_upc=has_upc,
-                    )
-                    for canon_p, factor in mapped.items():
-                        party_num[canon_p] += w * (val * factor)
-                        party_den[canon_p] += w
-
+            party_num, party_den = _accumulate_scope_polls(
+                plist, codauto_c, mask_map, apply_ccaa_dup_discount=True
+            )
             if not party_den:
                 continue
+            did_shrink = True
             n_cur_p = eff_n_c[ci]
             max_w_prov = max(party_den.values())
             for canon_p, w_tot in party_den.items():
@@ -879,6 +897,50 @@ def shrink_provinces_with_cis_and_regional_polls(
                 cur[ci, j] = (n_cur_p * cur[ci, j] + w_eff * y_poll) / (n_cur_p + w_eff)
             cur[ci] = _exact_normalize_row(cur[ci], active_mask[ci], float(blank_vec[ci]))
             reg_weights[ci] += max_w_prov / (n_cur_p + max_w_prov)
+
+    # Step 3C: Re-anchor nationwide parties onto Stage 1 national marginals via masked IPF so
+    # local empirical-Bayes updates shape intra-party geography without introducing national drift
+    # from unbalanced regional poll coverage or inflated CIS "OTROS".
+    if did_shrink:
+        pre_nat = turnout_weights @ pre_matrix
+        nationwide_cols = [
+            p_idx[p]
+            for p in ("PP", "PSOE", "VOX", "FA", "PODEMOS", "SALF", "OTROS")
+            if p in p_idx and pre_nat[p_idx[p]] > 0.0
+        ]
+        j_pp = p_idx.get("PP")
+        j_upn = p_idx.get("UPN_PP")
+        pp_duo_target = (
+            float(pre_nat[j_pp] + pre_nat[j_upn])
+            if j_pp is not None and j_upn is not None
+            else None
+        )
+        if nationwide_cols:
+            for _it in range(40):
+                cur_nat = turnout_weights @ cur
+                col_scale = np.ones(n_p, dtype=np.float64)
+                for j in nationwide_cols:
+                    if cur_nat[j] <= 1e-12:
+                        continue
+                    targ_j = float(pre_nat[j])
+                    if pp_duo_target is not None and j == j_pp and j_upn is not None:
+                        targ_j = max(0.01, pp_duo_target - float(cur_nat[j_upn]))
+                    col_scale[j] = targ_j / float(cur_nat[j])
+                cur = _exact_normalize_matrix(cur * col_scale[None, :], active_mask, blank_vec)
+                cur_nat_after = turnout_weights @ cur
+                errs = [
+                    abs(
+                        float(cur_nat_after[j])
+                        - (
+                            max(0.01, pp_duo_target - float(cur_nat_after[j_upn]))
+                            if pp_duo_target is not None and j == j_pp and j_upn is not None
+                            else float(pre_nat[j])
+                        )
+                    )
+                    for j in nationwide_cols
+                ]
+                if max(errs, default=0.0) < 1e-8:
+                    break
 
     final_mat = _exact_normalize_matrix(cur, active_mask, blank_vec)
     return final_mat, cis_weights, reg_weights

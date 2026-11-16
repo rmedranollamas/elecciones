@@ -235,9 +235,25 @@ def test_run_stage1_ensemble_and_cli_ratings(tmp_path: Path) -> None:
     assert res.engine == "ensemble"
     assert "kernel" in res.stage1_comparison
     assert "state_space" in res.stage1_comparison
+    assert "ensemble" in res.stage1_comparison
     assert "with_cis" in res.cis_sensitivity
     assert "without_cis" in res.cis_sensitivity
+    assert "cis_weight_pct" in res.cis_sensitivity
+    assert "cis_house_effect_pp" in res.cis_sensitivity
     assert abs(sum(res.mean_shares.values()) + res.blank_share - 1.0) < 1e-9
+
+    # Kernel and state_space runs also populate ensemble comparison cleanly for UI switching
+    for alt_eng in ("kernel", "state_space"):
+        alt_res = run_stage1(
+            polls_26,
+            BLACKOUT_CUTOFF_DATE_2026,
+            engine=alt_eng,
+            ratings=ratings,
+            compute_cis_sensitivity=True,
+        )
+        assert "ensemble" in alt_res.stage1_comparison
+        assert "kernel" in alt_res.stage1_comparison
+        assert "state_space" in alt_res.stage1_comparison
 
     # Leak-free exclusion in pollster ratings removes one historical election
     ratings_no23 = compute_pollster_ratings(exclude_election_ids=["2023-07"])

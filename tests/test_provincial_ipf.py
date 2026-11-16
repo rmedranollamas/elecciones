@@ -198,3 +198,54 @@ def test_historical_provincial_projection_all_five_cycles() -> None:
         for dist in proj.districts.values():
             simplex = district_simplex_sum(dist.final_shares, dist.blank_share)
             assert abs(simplex - 1.0) <= SIMPLEX_TOL
+
+
+def test_navarra_split_poll_sums_and_stage2_reanchors_nationwide_totals() -> None:
+    polls_26 = load_national_polls(get_polls_dir() / "national_2026.csv")
+    as_of = date(2026, 11, 16)
+    s1 = run_stage1(polls_26, as_of, engine="ensemble", compute_cis_sensitivity=False)
+
+    # 1. Stage 2 re-anchoring preserves nationwide Stage 1 totals cleanly (<= 0.0005 = 0.05 pp)
+    p_pre = project_2026_provinces(s1.mean_shares, as_of, apply_shrinkage=False)
+    p_post = project_2026_provinces(s1.mean_shares, as_of, apply_shrinkage=True)
+    for party in ("PSOE", "VOX", "FA", "PODEMOS", "SALF", "OTROS"):
+        assert (
+            abs(p_post.post_shrinkage_national[party] - p_pre.pre_shrinkage_national[party])
+            < 5e-4
+        )
+    duo_pre = p_pre.pre_shrinkage_national["PP"] + p_pre.pre_shrinkage_national["UPN_PP"]
+    duo_post = p_post.post_shrinkage_national["PP"] + p_post.post_shrinkage_national["UPN_PP"]
+    assert abs(duo_post - duo_pre) < 5e-4
+
+    # 2. A Navarra poll reporting separate PP + UPN shares MUST sum them (not average to half)
+    split_nav_poll = RegionalPollRecord(
+        scope_type="ccaa",
+        scope_code="15",
+        pollster="Gizaker",
+        fieldwork_start=date(2026, 11, 12),
+        fieldwork_end=date(2026, 11, 15),
+        sample_size=3000,
+        party_shares={"PP": 0.24, "UPN": 0.20, "PSOE": 0.21, "EH_BILDU": 0.16, "VOX": 0.07},
+    )
+    p_split = project_2026_provinces(
+        s1.mean_shares,
+        as_of,
+        regional_polls=[split_nav_poll],
+        cis_prov={},
+    )
+    merged_equiv_poll = RegionalPollRecord(
+        scope_type="ccaa",
+        scope_code="15",
+        pollster="Gizaker",
+        fieldwork_start=date(2026, 11, 12),
+        fieldwork_end=date(2026, 11, 15),
+        sample_size=3000,
+        party_shares={"UPN_PP": 0.44, "PSOE": 0.21, "EH_BILDU": 0.16, "VOX": 0.07},
+    )
+    p_merged = project_2026_provinces(
+        s1.mean_shares,
+        as_of,
+        regional_polls=[merged_equiv_poll],
+        cis_prov={},
+    )
+    assert np.allclose(p_split.final_matrix, p_merged.final_matrix, atol=1e-10)

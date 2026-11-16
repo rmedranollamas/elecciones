@@ -54,7 +54,7 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
     assert by_c["11"]["seats_2026"] == 8
     assert len(payload["sim_sample"]) == 200
 
-    # If node is present on PATH, verify inline JS syntax strictly
+    # If node is on PATH, verify inline JS syntax and run behavior under minimal DOM harness
     node_bin = shutil.which("node")
     if node_bin is not None:
         js_match = re.search(r"<script>(.*?)</script>\s*</body>", text, re.DOTALL)
@@ -63,6 +63,135 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
         js_file.write_text(js_match.group(1), encoding="utf-8")
         proc = subprocess.run([node_bin, "--check", str(js_file)], capture_output=True, text=True)
         assert proc.returncode == 0, proc.stderr
+
+        harness = tmp_path / "verify_dom.js"
+        harness.write_text(
+            f"""
+const fs = require("fs");
+const vm = require("vm");
+const payloadStr = fs.readFileSync({json.dumps(str(out_html))}, "utf8")
+  .match(/<script id="elecciones-data" type="application\\/json">(.*?)<\\/script>/s)[1];
+
+function makeEl(id, attrs = {{}}) {{
+  const listeners = {{}};
+  const children = [];
+  const classes = new Set(attrs.cls || []);
+  const el = {{
+    id: id || "",
+    _attrs: Object.assign({{}}, attrs),
+    children,
+    style: {{}},
+    innerHTML: "",
+    textContent: "",
+    value: attrs.value || "",
+    classList: {{
+      add: c => classes.add(c),
+      remove: c => classes.delete(c),
+      toggle: (c, force) => {{
+        if (force === undefined) {{ if (classes.has(c)) classes.delete(c); else classes.add(c); }}
+        else if (force) classes.add(c);
+        else classes.delete(c);
+      }},
+      contains: c => classes.has(c),
+    }},
+    getAttribute: k => el._attrs[k] !== undefined ? String(el._attrs[k]) : null,
+    setAttribute: (k, v) => {{ el._attrs[k] = String(v); }},
+    addEventListener: (ev, fn) => {{ (listeners[ev] = listeners[ev] || []).push(fn); }},
+    dispatchEvent: (evObj) => {{
+      const fns = listeners[evObj.type] || [];
+      fns.forEach(fn => fn(evObj));
+    }},
+    click: () => el.dispatchEvent({{ type: "click" }}),
+    appendChild: c => children.push(c),
+    closest: () => el,
+    querySelector: () => makeEl(""),
+    querySelectorAll: () => [],
+  }};
+  return el;
+}}
+
+const els = {{}};
+const getEl = id => (els[id] = els[id] || makeEl(id));
+getEl("elecciones-data").textContent = payloadStr;
+getEl("national-table").querySelector = () => getEl("national-table-tbody");
+getEl("battlegrounds-table").querySelector = () => getEl("bg-tbody");
+getEl("insp-party-table").querySelector = () => getEl("insp-tbody");
+getEl("whatif-table").querySelector = () => getEl("wi-tbody");
+getEl("investiture-mc-table").querySelector = () => getEl("inv-tbody");
+getEl("pollster-table").querySelector = () => getEl("pol-tbody");
+getEl("bt-models-table").querySelector = () => getEl("btm-tbody");
+getEl("bt-elections-table").querySelector = () => getEl("bte-tbody");
+
+const engineBtns = [
+  makeEl("eb0", {{ "data-engine": "ensemble", cls: ["seg-btn", "active"] }}),
+  makeEl("eb1", {{ "data-engine": "kernel", cls: ["seg-btn"] }}),
+  makeEl("eb2", {{ "data-engine": "state_space", cls: ["seg-btn"] }}),
+];
+const cisBtns = [
+  makeEl("cb0", {{ "data-cis": "with", cls: ["seg-btn", "active"] }}),
+  makeEl("cb1", {{ "data-cis": "without", cls: ["seg-btn"] }}),
+];
+
+const documentStub = {{
+  getElementById: id => getEl(id),
+  createElement: tag => makeEl(tag),
+  querySelector: sel => {{
+    if (sel.startsWith("#")) {{
+      const [idPart] = sel.slice(1).split(" ");
+      return getEl(idPart).querySelector();
+    }}
+    return makeEl("");
+  }},
+  querySelectorAll: sel => {{
+    if (sel === "#engine-toggle .seg-btn") return engineBtns;
+    if (sel === "#cis-toggle .seg-btn") return cisBtns;
+    return [];
+  }},
+}};
+
+const ctx = {{
+  document: documentStub,
+  window: {{ innerWidth: 1280, innerHeight: 800 }},
+  Math, Number, Object, Array, String, Set, Date, JSON, console,
+}};
+vm.runInNewContext(fs.readFileSync({json.dumps(str(js_file))}, "utf8"), ctx);
+
+function parseTotalSeats(tbodyHtml) {{
+  // Col 3 (0-indexed 2) in counterfactual mode is deterministic seats
+  let sum = 0;
+  for (const m of tbodyHtml.matchAll(/<tr>(.*?)<\\/tr>/gs)) {{
+    const cells = [...m[1].matchAll(/<td[^>]*>(.*?)<\\/td>/gs)];
+    const tds = cells.map(x => x[1].replace(/<[^>]+>/g, "").trim());
+    if (tds.length >= 4) {{
+      const val = Number(tds[2]);
+      if (!Number.isNaN(val)) sum += val;
+    }}
+  }}
+  return sum;
+}}
+
+const baseTable = getEl("national-table-tbody").innerHTML;
+engineBtns[1].click(); // Switch to kernel
+const kernelTable = getEl("national-table-tbody").innerHTML;
+const kernelSeats = parseTotalSeats(kernelTable);
+engineBtns[2].click(); // Switch to state_space
+const ssTable = getEl("national-table-tbody").innerHTML;
+const ssSeats = parseTotalSeats(ssTable);
+
+if (kernelTable === baseTable) throw new Error("Kernel switcher left table unchanged");
+if (ssTable === kernelTable) throw new Error("State-space switcher identical to kernel");
+if (kernelSeats !== 350) throw new Error("Kernel counterfactual seats != 350: " + kernelSeats);
+if (ssSeats !== 350) throw new Error("State-space counterfactual seats != 350: " + ssSeats);
+if (!getEl("mode-notice").classList.contains("visible")) throw new Error("Notice missing");
+if (!getEl("cis-diff-strip").innerHTML.includes("Peso efectivo CIS")) {{
+  throw new Error("Missing CIS weight note");
+}}
+console.log("JS harness passed:", {{ kernelSeats, ssSeats }});
+""",
+            encoding="utf-8",
+        )
+        run_res = subprocess.run([node_bin, str(harness)], capture_output=True, text=True)
+        assert run_res.returncode == 0, run_res.stdout + "\n" + run_res.stderr
 
 
 def test_dashboard_missing_optional_files_falls_back_cleanly(tmp_path: Path) -> None:

@@ -171,11 +171,26 @@ def test_50k_simulator_runtime_sla_and_bundle_invariants(tmp_path: Path) -> None
     assert nav.final_shares["PP"] == 0.0
     assert "PP" not in nav.party_projections
     assert nav.party_projections["UPN_PP"].seats_mean >= 1.0
+    # Catch-all synthetic residual "OTROS" never wins Congress seats or pollutes battlegrounds
+    otros_nat = bundle.national["seats"].get("OTROS", {})
+    assert otros_nat.get("mean", 0.0) == 0.0
+    assert otros_nat.get("p95", 0) == 0
     for con in bundle.constituencies:
         assert con.final_shares["AC"] == 0.0
         assert "AC" not in con.party_projections
+        if "OTROS" in con.party_projections:
+            assert con.party_projections["OTROS"].seats_mean == 0.0
+            assert con.party_projections["OTROS"].seats_p95 == 0
+        if con.last_seat_battle is not None:
+            assert con.last_seat_battle.holder != "OTROS"
+            assert all(r.party != "OTROS" for r in con.last_seat_battle.runners_up)
         for slot in con.seat_slots:
+            assert slot.party != "OTROS"
             assert classify_seat_tier(slot.prob) == slot.tier
+
+    for bg in bundle.battlegrounds:
+        assert bg["holder"] != "OTROS"
+        assert bg["challenger"] != "OTROS"
 
     # Tier totals match national sums cleanly
     seats_map = bundle.national["seats"]
