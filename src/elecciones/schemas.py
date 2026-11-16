@@ -2528,12 +2528,18 @@ class ModelBacktestMetrics:
     coverage_95_provincial_seats: float
     coverage_80_national_seats: float
     coverage_95_national_seats: float
+    vote_mae_provincial: float = 0.0
+    coverage_80_provincial_votes: float = 0.0
+    coverage_95_provincial_votes: float = 0.0
+    coverage_80_national_votes: float = 0.0
+    coverage_95_national_votes: float = 0.0
 
     def __post_init__(self) -> None:
         for attr in (
             "brier_score",
             "log_score",
             "vote_mae_national",
+            "vote_mae_provincial",
             "seat_mae_provincial",
             "seat_mae_national",
         ):
@@ -2542,6 +2548,7 @@ class ModelBacktestMetrics:
             raise SchemaValidationError("brier_score must be >= 0.0")
         for attr in (
             "vote_mae_national",
+            "vote_mae_provincial",
             "seat_mae_provincial",
             "seat_mae_national",
         ):
@@ -2552,6 +2559,10 @@ class ModelBacktestMetrics:
             "coverage_95_provincial_seats",
             "coverage_80_national_seats",
             "coverage_95_national_seats",
+            "coverage_80_provincial_votes",
+            "coverage_95_provincial_votes",
+            "coverage_80_national_votes",
+            "coverage_95_national_votes",
         ):
             val = _require_float(getattr(self, attr), attr)
             if val < 0.0 or val > 1.0:
@@ -2580,6 +2591,21 @@ class ModelBacktestMetrics:
             coverage_95_national_seats=_require_float(
                 d.get("coverage_95_national_seats"), "coverage_95_national_seats"
             ),
+            vote_mae_provincial=_require_float(
+                d.get("vote_mae_provincial", 0.0), "vote_mae_provincial"
+            ),
+            coverage_80_provincial_votes=_require_float(
+                d.get("coverage_80_provincial_votes", 0.0), "coverage_80_provincial_votes"
+            ),
+            coverage_95_provincial_votes=_require_float(
+                d.get("coverage_95_provincial_votes", 0.0), "coverage_95_provincial_votes"
+            ),
+            coverage_80_national_votes=_require_float(
+                d.get("coverage_80_national_votes", 0.0), "coverage_80_national_votes"
+            ),
+            coverage_95_national_votes=_require_float(
+                d.get("coverage_95_national_votes", 0.0), "coverage_95_national_votes"
+            ),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -2587,12 +2613,17 @@ class ModelBacktestMetrics:
             "brier_score": self.brier_score,
             "log_score": self.log_score,
             "vote_mae_national": self.vote_mae_national,
+            "vote_mae_provincial": self.vote_mae_provincial,
             "seat_mae_provincial": self.seat_mae_provincial,
             "seat_mae_national": self.seat_mae_national,
             "coverage_80_provincial_seats": self.coverage_80_provincial_seats,
             "coverage_95_provincial_seats": self.coverage_95_provincial_seats,
             "coverage_80_national_seats": self.coverage_80_national_seats,
             "coverage_95_national_seats": self.coverage_95_national_seats,
+            "coverage_80_provincial_votes": self.coverage_80_provincial_votes,
+            "coverage_95_provincial_votes": self.coverage_95_provincial_votes,
+            "coverage_80_national_votes": self.coverage_80_national_votes,
+            "coverage_95_national_votes": self.coverage_95_national_votes,
         }
 
 

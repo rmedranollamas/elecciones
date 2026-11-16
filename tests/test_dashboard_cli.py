@@ -31,6 +31,10 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
 
     # Editorial content, SVG hemicycle, cartogram, what-if, and backtest diagnostics
     assert "Radiografía probabilística del Congreso 29-N" in text
+    assert "Mediana simulada" in text
+    assert "Media simulada" not in text
+    assert "Madrid — 38 escaños" in text
+    assert "Madrid (28)" not in text
     assert 'id="hemicycle-svg"' in text
     assert 'id="cartogram-grid"' in text
     assert 'id="trend-svg"' in text
@@ -122,6 +126,11 @@ getEl("pollster-table").querySelector = () => getEl("pol-tbody");
 getEl("bt-models-table").querySelector = () => getEl("btm-tbody");
 getEl("bt-elections-table").querySelector = () => getEl("bte-tbody");
 
+const sliderInputPp = makeEl("sl-in-PP", {{ "data-pid": "PP", value: "0" }});
+getEl("whatif-sliders").querySelectorAll = sel => (
+  sel === "input[type='range']" ? [sliderInputPp] : []
+);
+
 const engineBtns = [
   makeEl("eb0", {{ "data-engine": "ensemble", cls: ["seg-btn", "active"] }}),
   makeEl("eb1", {{ "data-engine": "kernel", cls: ["seg-btn"] }}),
@@ -171,18 +180,47 @@ function parseTotalSeats(tbodyHtml) {{
 }}
 
 const baseTable = getEl("national-table-tbody").innerHTML;
+const baseInsp = getEl("insp-tbody").innerHTML;
+const baseCartoCount = getEl("cartogram-grid").children.length;
+if (baseCartoCount !== 52) throw new Error("Expected 52 cartogram tiles, got " + baseCartoCount);
+if (getEl("insp-ccaa").textContent.includes("ESCENARIO SIMULADO")) {{
+  throw new Error("Base inspector should not say ESCENARIO SIMULADO");
+}}
+
 engineBtns[1].click(); // Switch to kernel
 const kernelTable = getEl("national-table-tbody").innerHTML;
 const kernelSeats = parseTotalSeats(kernelTable);
+const kernelInsp = getEl("insp-tbody").innerHTML;
+if (!getEl("mode-notice").classList.contains("visible")) {{
+  throw new Error("Notice missing in kernel");
+}}
+if (!getEl("insp-ccaa").textContent.includes("ESCENARIO SIMULADO")) {{
+  throw new Error("Counterfactual kernel switch did not update inspector mode");
+}}
+if (kernelInsp === baseInsp) throw new Error("Kernel switch left inspector table unchanged");
+
 engineBtns[2].click(); // Switch to state_space
 const ssTable = getEl("national-table-tbody").innerHTML;
 const ssSeats = parseTotalSeats(ssTable);
+if (!getEl("mode-notice").classList.contains("visible")) {{
+  throw new Error("Notice missing in state_space");
+}}
+
+engineBtns[0].click(); // Return to ensemble, then test What-If slider live cartogram/inspector sync
+if (getEl("mode-notice").classList.contains("visible")) {{
+  throw new Error("Notice should clear when returning to base ensemble");
+}}
+sliderInputPp.value = "4.0";
+sliderInputPp.dispatchEvent({{ type: "input" }});
+const sliderInsp = getEl("insp-tbody").innerHTML;
+if (sliderInsp === baseInsp || !getEl("insp-ccaa").textContent.includes("ESCENARIO SIMULADO")) {{
+  throw new Error("What-If slider did not update District Inspector live");
+}}
 
 if (kernelTable === baseTable) throw new Error("Kernel switcher left table unchanged");
 if (ssTable === kernelTable) throw new Error("State-space switcher identical to kernel");
 if (kernelSeats !== 350) throw new Error("Kernel counterfactual seats != 350: " + kernelSeats);
 if (ssSeats !== 350) throw new Error("State-space counterfactual seats != 350: " + ssSeats);
-if (!getEl("mode-notice").classList.contains("visible")) throw new Error("Notice missing");
 if (!getEl("cis-diff-strip").innerHTML.includes("Peso efectivo CIS")) {{
   throw new Error("Missing CIS weight note");
 }}

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import math
+import re
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import date
@@ -144,7 +145,11 @@ def _estimate_contemporaneous_consensus_2026(
         and p.fieldwork_end >= date(2026, 8, 1)
     ]
     if len(ref_polls) < 5:
-        ref_polls = [p for p in polls if not p.is_cis]
+        ref_polls = [
+            p
+            for p in polls
+            if not p.is_cis and p.pollster not in _PARTISAN_INTERNAL_POLLSTERS
+        ]
     if not ref_polls:
         return [], {}
 
@@ -223,15 +228,17 @@ def _extract_2026_poll_pct(
     return None
 
 
-_BENCHMARK_NON_POLLSTERS: Final[frozenset[str]] = frozenset({"2024 EP election"})
+_BENCHMARK_NON_POLLSTER_RE: Final[re.Pattern[str]] = re.compile(
+    r"(?:\belections?\b|\breferendum\b|\bexit poll\b)", re.IGNORECASE
+)
 _PARTISAN_INTERNAL_POLLSTERS: Final[frozenset[str]] = frozenset(
-    {"PP", "PSOE", "Vox", "Sumar", "Podemos"}
+    {"PP", "PSOE", "Vox", "VOX", "Sumar", "Podemos", "Cs", "ERC"}
 )
 
 
 def is_benchmark_or_excluded_pollster(pollster: str) -> bool:
     """Return True for election benchmark summary rows embedded in Wikipedia tables."""
-    return pollster.strip() in _BENCHMARK_NON_POLLSTERS
+    return bool(_BENCHMARK_NON_POLLSTER_RE.search(pollster.strip()))
 
 
 def compute_pollster_ratings(
@@ -394,7 +401,7 @@ def compute_pollster_ratings(
 
         resids_pol: dict[str, float] = {}
         if has_2026 and plist_26 and dates_grid:
-            max_26 = p26_list[-1].fieldwork_end
+            max_26 = max(p.fieldwork_end for p in p26_list)
             ov_ws = _overlap_weights_same_pollster(plist_26)
             for party in tracked_2026_parties:
                 num = 0.0
@@ -494,7 +501,11 @@ def compute_pollster_ratings(
 
         base_g = _GRADE_BASE_WEIGHT[grade]
         mae_scale = (hyperparams.prior_mae_anchor / max(0.9, eff_mae)) ** 1.4
-        cis_factor = 0.55 if pol == "CIS" else 1.0
+        cis_factor = (
+            0.55
+            if pol == "CIS"
+            else (0.35 if pol in _PARTISAN_INTERNAL_POLLSTERS else 1.0)
+        )
         g_weight = round(base_g * mae_scale * cis_factor, 4)
 
         records.append(

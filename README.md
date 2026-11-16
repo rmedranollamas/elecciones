@@ -17,35 +17,37 @@ Sistema estadístico completo para la predicción probabilística de escaños al
     - Índice histórico de casas encuestadoras (`pollster_ratings.csv`: MAE encogido por Empirical Bayes, grados `A/B/C`, detección de *herding* y efectos de casa anclados por resultados oficiales).
     - **Etapa 1A (`kernel`)**: promedio ponderado por grado, decaimiento exponencial de recencia (vida media de campaña/no-campaña), tope de tamaño muestral efectivo (`N_eff`), penalización por solapamiento en *tracking* diarios, ajuste centrado de *house effects* a lo Jackman y conmutador `--exclude-cis-headline`.
     - **Etapa 1B (`state_space`)**: filtro/suavizador dinámico en espacio de razón logarítmica aditiva (**ALR**) con propagación de deriva por paseo aleatorio durante la veda electoral (24–28 nov).
-    - **Ensemble calibrado (`ensemble`)**: combinación lineal convexa calibrada mediante backtest LOOCV (`0.25 Kernel + 0.75 Espacio-Estado`).
+    - **Ensemble calibrado (`ensemble`)**: combinación lineal convexa calibrada mediante backtest LOOCV (`0.05 Kernel + 0.95 Espacio-Estado`).
   - **Etapa 2 — Proyección provincial IPF (`provincial.py`)**:
     - Prior compuesto provincial, matrices de transferencia de coaliciones (`UPN–PP`, `FA`/`Podemos`/`Compromís-FV`/`UPC`/`Ara Més`/`Adelante`, `SALF`, `AC`) estrictamente enmascaradas por $M_{c,p}$, desplazamiento *swing* logit multinomial + rastrillado IPF ponderado por participación, y encogimiento *Empirical Bayes* con encuestas autonómicas/provinciales y el CIS #3584.
   - **Etapa 3 — Simulador Monte Carlo jerárquico Student-$t$ (`covariance.py`, `simulator.py`)**:
-    - `50.000` simulaciones en `< 1.5s` (`~1.1–1.3s` en CPU estándar) mediante vectorización comprimida sobre celdas activas ($M_{c,p}=1$).
-    - Descomposición jerárquica de errores en log-razón (**Nacional + CCAA + Provincial**) con colas pesadas Student-$t$ ($\nu = 4.5$), choques correlacionados de bloque izquierda/derecha, covariancia posterior de Etapa 1 y variación estocástica de participación y voto en blanco.
+    - `50.000` simulaciones en `< 1.5s` (`~1.42s` en CPU estándar) mediante vectorización comprimida sobre celdas activas ($M_{c,p}=1$).
+    - Descomposición jerárquica de errores en log-razón (**Nacional + CCAA + Provincial**) con colas pesadas Student-$t$ ($\nu = 4.5$, $\sigma_{\text{nac}}=0.1146$, $\sigma_{\text{CCAA}}=0.0983$, $\sigma_{\text{prov}}=0.0641$), choques correlacionados de bloque izquierda/derecha, covariancia posterior de Etapa 1 y variación estocástica de participación y voto en blanco.
     - Clasificación de escaños en niveles de certidumbre: **Seguro** ($\ge 99\%$), **Probable** ($75\text{–}99\%$), **En juego** ($25\text{–}75\%$), **Remoto** ($5\text{–}25\%$).
   - **Etapa 4 — Investidura Art. 99 CE (`investiture.py`)**:
     - Probabilidades de **1.ª votación** ($\ge 176$ escaños, mayoría absoluta), **2.ª votación** (mayoría simple estricta $\text{Sí} > \text{No}$ con reglas explícitas de abstención) y riesgo de bloqueo institucional / repetición electoral (**Art. 99.5 CE**).
 - **Tablero editorial cero-backend (`docs/index.html`)**:
-  - Hemiciclo interactivo SVG de 350 escaños, cartograma de las 52 circunscripciones con inspector D'Hondt por provincia, series temporales de 100 días, simulador en vivo *"What-If"* sobre las 52 circunscripciones en el navegador y constructor interactivo de pactos de investidura.
+  - Hemiciclo interactivo SVG de 350 escaños, cartograma de las 52 circunscripciones con inspector D'Hondt dinámico (en modo base y bajo escenarios contrafactuales / *"What-If"*), series temporales causales de 100 días, simulador en vivo *"What-If"* sobre las 52 circunscripciones en el navegador y constructor interactivo de pactos de investidura.
 
 ---
 
 ## Calibración histórica fuera de muestra (LOOCV 2015–2023)
 
-Evaluado de manera estricta fuera de muestra dejando fuera cada elección completa (`260` carreras provinciales · `1.750` escaños · horizontes `T-15d`, `T-6d`, `T-1d`):
+Evaluado de manera estricta fuera de muestra dejando fuera cada elección completa (calibrando sesgos/pesos históricos de forma causal únicamente con convocatorias anteriores; `260` carreras provinciales · `1.750` escaños · horizontes `T-15d`, `T-6d`, `T-1d`):
 
-| Motor | MAE Voto Nac. (pp) | MAE Esc. Prov. | MAE Esc. Nac. | Brier Score | Cob. 80% (P/N) | Cob. 95% (P/N) |
+| Motor | MAE Voto (P / N) | MAE Esc. (P / N) | Brier / LogLoss | Cob. Voto 80/95 (P) | Cob. Voto 80/95 (N) | Cob. Esc. 80/95 (N) |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Stage 1B Espacio-Estado** | 1.02 pp | 0.352 | 3.32 | 0.0747 | 96.4% / 85.0% | 98.7% / 92.5% |
-| **Ensemble Calibrado** | 1.03 pp | 0.353 | 3.39 | 0.0761 | 96.1% / 83.8% | 98.6% / 91.9% |
-| **Stage 1A Kernel** | 1.08 pp | 0.353 | 3.61 | 0.0773 | 95.3% / 80.8% | 98.3% / 90.2% |
+| **Stage 1B Espacio-Estado** | 2.33 / 1.05 pp | 0.358 / 3.43 | 0.0707 / 0.242 | 75.8% / 85.9% | 85.3% / 97.8% | 84.7% / 92.6% |
+| **Ensemble Calibrado** | 2.35 / 1.06 pp | 0.362 / 3.50 | 0.0714 / 0.244 | 75.5% / 85.8% | 83.1% / 97.8% | 85.6% / 91.5% |
+| **Stage 1A Kernel** | 2.42 / 1.13 pp | 0.363 / 3.69 | 0.0732 / 0.249 | 76.3% / 88.5% | 80.2% / 96.3% | 82.4% / 92.5% |
+
+*(En el horizonte final `T-1d`, el ensemble alcanza un MAE de **0.91 pp** en voto nacional, **2.15 pp** en voto provincial y **2.84 escaños** nacionales).*
 
 Tasa empírica de acierto por nivel de certidumbre fuera de muestra:
-- **Seguro ($\ge 99\%$)** → **99.3%** (`2.501 / 2.518`)
-- **Probable ($75\text{–}99\%$)** → **92.4%** (`1.711 / 1.851`)
-- **En juego ($25\text{–}75\%$)** → **51.6%** (`860 / 1.668`)
-- **Remoto ($5\text{–}25\%$)** → **9.7%** (`138 / 1.424`)
+- **Seguro ($\ge 99\%$)** → **99.6%** (`2.123 / 2.131`)
+- **Probable ($75\text{–}99\%$)** → **93.7%** (`1.885 / 2.011`)
+- **En juego ($25\text{–}75\%$)** → **52.7%** (`1.080 / 2.049`)
+- **Remoto ($5\text{–}25\%$)** → **7.2%** (`134 / 1.859`)
 
 ---
 
@@ -62,7 +64,7 @@ uv run elecciones run-all --offline
 uv run elecciones fetch --offline                  # Validar snapshots y metadata BOE
 uv run elecciones ratings                          # Calcular MAE y sesgos de casa
 uv run elecciones backtest                         # Calibración LOOCV 2015-2023
-uv run elecciones forecast --n-sims 50000          # Simulación 50k (~1.1s) -> forecast_29n.json
+uv run elecciones forecast --n-sims 50000          # Simulación 50k (~1.4s) -> forecast_29n.json
 uv run elecciones forecast --exclude-cis-headline  # Sensibilidad sin CIS en titular
 uv run elecciones dashboard                        # Compilar docs/index.html autónomo
 uv run elecciones allocate -i distrito.json --json # Reparto LOREG Art. 163 ad-hoc

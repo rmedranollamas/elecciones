@@ -326,8 +326,10 @@ def _normalize_header_party(raw_header: str, *, context: str = "national") -> st
         return "PSOE"
     if compact == "vox":
         return "VOX"
-    if compact in {"fa", "frente amplio", "cha"}:
+    if compact in {"fa", "frente amplio"}:
         return "FA"
+    if compact == "cha":
+        return "CHA"
     if compact in {"fv", "front valencia"}:
         return "COMPROMIS_FV"
     if compact == "salf":
@@ -740,6 +742,7 @@ def parse_national_wiki_html(
                 "general election" in low_p0
                 or "polling firm" in low_p0
                 or "exit poll" in low_p0
+                or bool(re.search(r"\b(?:elections?|referendum)\b", low_p0))
             ):
                 continue
 
@@ -914,8 +917,8 @@ def parse_regional_wiki_html(html_path: Path) -> list[RegionalPollRecord]:
             low_p0 = clean_p0.lower()
             if (
                 not clean_p0
-                or "election" in low_p0
                 or "polling firm" in low_p0
+                or bool(re.search(r"\b(?:elections?|referendum|exit poll)\b", low_p0))
                 or is_cis_third_party_reestimation(clean_p0)
             ):
                 continue
@@ -1083,6 +1086,7 @@ def _write_regional_polls_csv(records: list[RegionalPollRecord], out_path: Path)
         "ARA_MES",
         "UPC",
         "NC",
+        "CHA",
         "CPM",
     ]
     rank = {p: i for i, p in enumerate(major_order)}

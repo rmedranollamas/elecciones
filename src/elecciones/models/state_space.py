@@ -25,6 +25,7 @@ from elecciones.models.kernel_aggregator import (
     DEFAULT_NATIONAL_BLANK_SHARE,
     Stage1Result,
     _infer_tracked_parties,
+    _non_recency_poll_weight,
     aggregate_kernel,
     compute_wave_overlap_penalties,
     filter_polls_as_of,
@@ -98,7 +99,7 @@ def smooth_state_space(
     reference_pollsters: Sequence[str] | None = None,
     blank_share: float = DEFAULT_NATIONAL_BLANK_SHARE,
     lookback_days: int = 180,
-    n_iter: int = 4,
+    n_iter: int = 5,
 ) -> Stage1Result:
     """Run Stage 1B Iterated Extended RTS Kalman Smoother in ALR coordinates."""
     t_elec = target_election_date or resolve_target_election_date(election_id)
@@ -154,11 +155,6 @@ def smooth_state_space(
     polls_at_t: dict[int, list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]] = (
         defaultdict(list)
     )
-    has_recent_fa = any(
-        ("FA" in p.party_shares or "FA_FV" in p.party_shares)
-        and (as_of - p.fieldwork_end).days <= 35
-        for p in ss_polls
-    )
 
     obs_scale_sq = hyperparams.state_space_obs_scale ** 2
     for pi, poll in enumerate(ss_polls):
@@ -183,6 +179,7 @@ def smooth_state_space(
         y_vals: list[float] = []
         d_vals: list[float] = []
         var_vals: list[float] = []
+        has_explicit_fa_or_fv = "FA" in poll.party_shares or "FA_FV" in poll.party_shares
 
         for party, raw_share in poll.party_shares.items():
             if party in p_idx:
@@ -206,17 +203,35 @@ def smooth_state_space(
                     p_safe = max(0.005, min(0.95, raw_share))
                     srs = (p_safe * (1.0 - p_safe)) / max(100.0, n_eff)
                     var_vals.append((srs + obs_scale_sq * (p_safe + 0.03) ** 1.1) / eff_weight)
-            elif party == "SUMAR" and not has_recent_fa and "FA" in p_idx:
+            elif party == "SUMAR" and not has_explicit_fa_or_fv and "FA" in p_idx:
                 row = np.zeros(k, dtype=np.float64)
                 row[p_idx["FA"]] = 1.0
-                if "COMPROMIS_FV" in p_idx:
+                include_fv = "COMPROMIS_FV" in p_idx and "COMPROMIS_FV" not in poll.party_shares
+                if include_fv:
                     row[p_idx["COMPROMIS_FV"]] = 1.0
-                c_rows.append(row)
-                y_vals.append(raw_share * 0.80)
-                d_vals.append(he.get("FA", 0.0))
-                p_safe = max(0.005, min(0.95, raw_share * 0.80))
-                srs = (p_safe * (1.0 - p_safe)) / max(100.0, n_eff)
-                var_vals.append((srs + obs_scale_sq * 0.25) / (0.65 * eff_weight))
+                if poll.fieldwork_end < date(2024, 1, 1):
+                    c_rows.append(row)
+                    y_adj = raw_share * 0.80
+                    y_vals.append(y_adj)
+                    d_vals.append(
+                        he.get("FA", 0.0) + (he.get("COMPROMIS_FV", 0.0) if include_fv else 0.0)
+                    )
+                    p_safe = max(0.005, min(0.95, y_adj))
+                    srs = (p_safe * (1.0 - p_safe)) / max(100.0, n_eff)
+                    var_vals.append((srs + obs_scale_sq * 0.25) / (0.65 * eff_weight))
+                else:
+                    # 2024–Oct 2026 polls report Podemos & Adelante separately -> SUMAR = FA + FV
+                    c_rows.append(row)
+                    y_vals.append(raw_share)
+                    d_vals.append(
+                        he.get("FA", 0.0) + (he.get("COMPROMIS_FV", 0.0) if include_fv else 0.0)
+                    )
+                    p_safe = max(0.005, min(0.95, raw_share))
+                    srs = (p_safe * (1.0 - p_safe)) / max(100.0, n_eff)
+                    var_vals.append(
+                        (srs + obs_scale_sq * ((p_safe + 0.03) ** 1.1 + 0.08))
+                        / (0.75 * eff_weight)
+                    )
 
         if c_rows:
             polls_at_t[t_step].append(
@@ -305,8 +320,9 @@ def smooth_state_space(
             ps = p_filt[t] + gain @ (p_smooth[t + 1] - p_pred[t + 1]) @ gain.T
             p_smooth[t] = 0.5 * (ps + ps.T)
 
-        # Damped step for guaranteed monotonic softmax convergence
-        x_nom = 0.25 * x_nom + 0.75 * x_smooth
+        if _it < n_iter - 1:
+            # Damped step for guaranteed monotonic softmax convergence across outer iterations
+            x_nom = 0.25 * x_nom + 0.75 * x_smooth
 
     # Evaluate final state at horizon_date (incorporating blackout drift beyond as_of)
     x_eval = x_smooth[horizon_idx]
@@ -357,7 +373,24 @@ def smooth_state_space(
             trend_parties[p]["p10"].append(round(max(0.0, mu - 1.28155 * se), 5))
             trend_parties[p]["p90"].append(round(min(1.0, mu + 1.28155 * se), 5))
 
-    n_eff = min(float(len(ss_polls)), max(kernel_seed.n_effective_polls, 1.0))
+    days_to_elec = (t_elec - as_of).days
+    half_life = (
+        hyperparams.half_life_campaign_days
+        if days_to_elec <= 60
+        else hyperparams.half_life_quiet_days
+    )
+    decay_rate = math.log(2.0) / max(1.0, half_life)
+    ss_w = np.array(
+        [
+            math.exp(-decay_rate * min(240.0, max(0.0, float((as_of - p.midpoint_date).days))))
+            * _non_recency_poll_weight(p, float(overlap_u[pi]), ratings_map, hyperparams)
+            for pi, p in enumerate(ss_polls)
+        ],
+        dtype=np.float64,
+    )
+    w_sum_ss = float(ss_w.sum())
+    w_sq_ss = float(np.sum(ss_w**2))
+    n_eff = float((w_sum_ss * w_sum_ss) / max(1e-12, w_sq_ss)) if w_sum_ss > 0.0 else 1.0
 
     return Stage1Result(
         as_of_date=as_of,

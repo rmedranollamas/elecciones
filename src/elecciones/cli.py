@@ -364,23 +364,23 @@ def backtest_command(
             header_style="bold cyan",
         )
         table.add_column("Engine", style="bold")
-        table.add_column("Vote MAE (pp)", justify="right")
-        table.add_column("Seat MAE (Prov)", justify="right")
-        table.add_column("Seat MAE (Nat)", justify="right")
+        table.add_column("Vote MAE P/N", justify="right")
+        table.add_column("Seat MAE P/N", justify="right")
         table.add_column("Brier", justify="right")
         table.add_column("LogLoss", justify="right")
-        table.add_column("Cov 80% (P/N)", justify="right")
-        table.add_column("Cov 95% (P/N)", justify="right")
+        table.add_column("Vote Cov 80/95 (P)", justify="right")
+        table.add_column("Vote Cov 80/95 (N)", justify="right")
+        table.add_column("Seat Cov 80/95 (N)", justify="right")
         for m_name, m in summary.models.items():
             table.add_row(
                 m_name,
-                f"{m.vote_mae_national:.2f}",
-                f"{m.seat_mae_provincial:.3f}",
-                f"{m.seat_mae_national:.2f}",
+                f"{m.vote_mae_provincial:.2f}/{m.vote_mae_national:.2f}",
+                f"{m.seat_mae_provincial:.3f}/{m.seat_mae_national:.2f}",
                 f"{m.brier_score:.4f}",
                 f"{m.log_score:.4f}",
-                f"{m.coverage_80_provincial_seats:.1%} / {m.coverage_80_national_seats:.1%}",
-                f"{m.coverage_95_provincial_seats:.1%} / {m.coverage_95_national_seats:.1%}",
+                f"{m.coverage_80_provincial_votes:.1%}/{m.coverage_95_provincial_votes:.1%}",
+                f"{m.coverage_80_national_votes:.1%}/{m.coverage_95_national_votes:.1%}",
+                f"{m.coverage_80_national_seats:.1%}/{m.coverage_95_national_seats:.1%}",
             )
         console.print(table)
         t_table = Table(

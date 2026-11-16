@@ -86,6 +86,11 @@ def _score_simulated_projection(
     list[float],
     list[float],
     list[float],
+    list[float],
+    list[int],
+    list[int],
+    list[int],
+    list[int],
     list[int],
     list[int],
     list[int],
@@ -108,30 +113,43 @@ def _score_simulated_projection(
 
     # Actual provincial matrices aligned to proj.party_ids
     act_seats_mat = np.zeros((n_c, n_p), dtype=np.int32)
+    act_share_mat = np.zeros((n_c, n_p), dtype=np.float64)
     act_votes_tot = np.zeros(n_p, dtype=np.float64)
     tot_valid = 0.0
     for i, cpro in enumerate(proj.cpros):
         ar = actual_by_cpro[cpro]
+        val_i = max(1.0, float(ar.validos))
         tot_valid += float(ar.validos)
         for j, pid in enumerate(party_ids):
+            v_ij = float(ar.party_votes.get(pid, 0))
             act_seats_mat[i, j] = int(ar.party_seats.get(pid, 0))
-            act_votes_tot[j] += float(ar.party_votes.get(pid, 0))
+            act_share_mat[i, j] = v_ij / val_i
+            act_votes_tot[j] += v_ij
 
-    # 1) National vote share MAE (in percentage points) over non-trivial tracked parties
+    # 1) National vote share MAE (pp) & continuous 80%/95% vote coverage over tracked parties
     vote_errs: list[float] = []
+    cov80_nat_votes: list[int] = []
+    cov95_nat_votes: list[int] = []
     for pid in stage1_res.parties:
         if pid == "OTROS" or pid not in party_ids:
             continue
         j = party_ids.index(pid)
-        act_pct = (act_votes_tot[j] / max(1.0, tot_valid)) * 100.0
+        act_share = act_votes_tot[j] / max(1.0, tot_valid)
+        act_pct = act_share * 100.0
         if act_pct < 0.8:
             continue
         pred_pct = float(stage1_res.mean_shares.get(pid, 0.0)) * 100.0
         vote_errs.append(abs(pred_pct - act_pct))
+        nq = np.percentile(sim.national_shares[:, j], [2.5, 10.0, 90.0, 97.5])
+        cov80_nat_votes.append(1 if float(nq[1]) <= act_share <= float(nq[2]) else 0)
+        cov95_nat_votes.append(1 if float(nq[0]) <= act_share <= float(nq[3]) else 0)
 
-    # 2) Provincial seat MAE, 80%/95% coverage, and slot Brier/LogScore/Tier calibration
+    # 2) Provincial vote MAE/coverage, seat MAE/coverage, and slot Brier/LogScore/Tier calibration
     briers: list[float] = []
     log_losses: list[float] = []
+    prov_vote_errs: list[float] = []
+    cov80_prov_votes: list[int] = []
+    cov95_prov_votes: list[int] = []
     prov_seat_errs: list[float] = []
     cov80_prov: list[int] = []
     cov95_prov: list[int] = []
@@ -150,6 +168,19 @@ def _score_simulated_projection(
         for j in range(n_p):
             if not proj.active_mask[i, j]:
                 continue
+            pid = party_ids[j]
+            if pid != "OTROS":
+                act_sv = float(act_share_mat[i, j])
+                pred_sv = float(sim.prov_share_mean[i, j])
+                if act_sv >= 0.008 or pred_sv >= 0.008:
+                    prov_vote_errs.append(abs(pred_sv - act_sv) * 100.0)
+                    p10_v = float(sim.prov_share_p10[i, j])
+                    p90_v = float(sim.prov_share_p90[i, j])
+                    p25_v = float(sim.prov_share_p2_5[i, j])
+                    p97_v = float(sim.prov_share_p97_5[i, j])
+                    cov80_prov_votes.append(1 if p10_v <= act_sv <= p90_v else 0)
+                    cov95_prov_votes.append(1 if p25_v <= act_sv <= p97_v else 0)
+
             act_s = int(act_seats_mat[i, j])
             pred_m = float(prov_means[i, j])
             lo95 = int(prov_q[0, i, j])
@@ -203,12 +234,17 @@ def _score_simulated_projection(
         briers,
         log_losses,
         vote_errs,
+        prov_vote_errs,
         prov_seat_errs,
         nat_seat_errs,
         cov80_prov,
         cov95_prov,
         cov80_nat,
         cov95_nat,
+        cov80_prov_votes,
+        cov95_prov_votes,
+        cov80_nat_votes,
+        cov95_nat_votes,
         tier_counts,
     )
 
@@ -217,12 +253,17 @@ def _aggregate_metrics(
     briers: Sequence[float],
     log_losses: Sequence[float],
     vote_errs: Sequence[float],
+    prov_vote_errs: Sequence[float],
     prov_seat_errs: Sequence[float],
     nat_seat_errs: Sequence[float],
     cov80_prov: Sequence[int],
     cov95_prov: Sequence[int],
     cov80_nat: Sequence[int],
     cov95_nat: Sequence[int],
+    cov80_prov_votes: Sequence[int],
+    cov95_prov_votes: Sequence[int],
+    cov80_nat_votes: Sequence[int],
+    cov95_nat_votes: Sequence[int],
 ) -> ModelBacktestMetrics:
     def _mean(xs: Sequence[float | int], default: float = 0.0) -> float:
         return float(sum(xs) / len(xs)) if xs else default
@@ -237,6 +278,11 @@ def _aggregate_metrics(
         coverage_95_provincial_seats=round(_mean(cov95_prov, 0.95), 4),
         coverage_80_national_seats=round(_mean(cov80_nat, 0.8), 4),
         coverage_95_national_seats=round(_mean(cov95_nat, 0.95), 4),
+        vote_mae_provincial=round(_mean(prov_vote_errs), 4),
+        coverage_80_provincial_votes=round(_mean(cov80_prov_votes, 0.8), 4),
+        coverage_95_provincial_votes=round(_mean(cov95_prov_votes, 0.95), 4),
+        coverage_80_national_votes=round(_mean(cov80_nat_votes, 0.8), 4),
+        coverage_95_national_votes=round(_mean(cov95_nat_votes, 0.95), 4),
     )
 
 
@@ -255,7 +301,8 @@ def _evaluate_suite(
     dict[str, dict[str, float]],
 ]:
     """Evaluate a complete model across all ``(election, horizon)`` cached cases."""
-    all_lists: tuple[list[Any], ...] = tuple([] for _ in range(9))
+    n_metric_lists = 14
+    all_lists: tuple[list[Any], ...] = tuple([] for _ in range(n_metric_lists))
     by_h: dict[int, tuple[list[Any], ...]] = {}
     by_e: dict[str, tuple[list[Any], ...]] = {}
     tier_tot: dict[str, list[int]] = {
@@ -302,13 +349,13 @@ def _evaluate_suite(
             seed=seed + idx * 131 + (17 if model_name == "ensemble" else 0),
             hyperparams=hyperparams,
         )
-        h_lists = by_h.setdefault(c.horizon_days, tuple([] for _ in range(9)))
-        e_lists = by_e.setdefault(c.election_id, tuple([] for _ in range(9)))
-        for k in range(9):
+        h_lists = by_h.setdefault(c.horizon_days, tuple([] for _ in range(n_metric_lists)))
+        e_lists = by_e.setdefault(c.election_id, tuple([] for _ in range(n_metric_lists)))
+        for k in range(n_metric_lists):
             all_lists[k].extend(res[k])
             h_lists[k].extend(res[k])
             e_lists[k].extend(res[k])
-        for tier_k, pair in res[9].items():
+        for tier_k, pair in res[14].items():
             tier_tot[tier_k][0] += pair[0]
             tier_tot[tier_k][1] += pair[1]
 
@@ -321,10 +368,17 @@ def _evaluate_suite(
             "brier_score": m.brier_score,
             "log_score": m.log_score,
             "vote_mae_national": m.vote_mae_national,
+            "vote_mae_provincial": m.vote_mae_provincial,
             "seat_mae_provincial": m.seat_mae_provincial,
             "seat_mae_national": m.seat_mae_national,
             "coverage_80_provincial_seats": m.coverage_80_provincial_seats,
             "coverage_95_provincial_seats": m.coverage_95_provincial_seats,
+            "coverage_80_national_seats": m.coverage_80_national_seats,
+            "coverage_95_national_seats": m.coverage_95_national_seats,
+            "coverage_80_provincial_votes": m.coverage_80_provincial_votes,
+            "coverage_95_provincial_votes": m.coverage_95_provincial_votes,
+            "coverage_80_national_votes": m.coverage_80_national_votes,
+            "coverage_95_national_votes": m.coverage_95_national_votes,
         }
 
     tier_buckets: dict[str, TierCalibrationBucket] = {}
@@ -345,7 +399,7 @@ def _calibrate_ensemble_and_scales(
     seed: int,
 ) -> tuple[ModelHyperparameters, HierarchicalCovarianceConfig, dict[str, float]]:
     """Empirically calibrate ensemble weights and Student-t hierarchical scales via LOOCV."""
-    # Step 1: Select optimal Stage 1 ensemble blend weight from vote & seat Brier on T-6d/T-1d
+    # Step 1: Select optimal Stage 1 ensemble blend weight from vote MSE on T-6d/T-1d
     mid_late = [c for c in cases if c.horizon_days in {6, 1}] or list(cases)
 
     def _vote_mse(w_k: float) -> float:
@@ -370,7 +424,7 @@ def _calibrate_ensemble_and_scales(
 
     best_wk = hyperparams.ensemble_weight_kernel
     best_mse = float("inf")
-    for cand_wk in (0.25, 0.35, 0.45, 0.55, 0.65, 0.75):
+    for cand_wk in (0.05, 0.10, 0.15, 0.20, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75):
         mse = _vote_mse(cand_wk)
         if mse < best_mse:
             best_mse = mse
@@ -392,7 +446,7 @@ def _calibrate_ensemble_and_scales(
         pairs.append((replace(c.kernel_s2, final_matrix=mixed_mat), c.actual_by_cpro))
     emp_hier = estimate_empirical_error_hierarchy(pairs)
 
-    # Step 3: Search compactly over Student-t df & hierarchical scales targeting calibrated coverage
+    # Step 3: Search decoupled National vs Local Student-t scales targeting continuous coverage
     base_nat = max(0.06, min(0.14, float(emp_hier["nat_mad"]) * 0.90))
     base_ccaa = max(0.04, min(0.10, float(emp_hier["ccaa_mad"]) * 0.95))
     base_prov = max(0.035, min(0.08, float(emp_hier["prov_mad"]) * 0.95))
@@ -406,34 +460,38 @@ def _calibrate_ensemble_and_scales(
     )
 
     cal_cases = [c for c in cases if c.horizon_days in {6, 1}] or list(cases)
-    for nu in (4.5, 5.0, 6.0):
-        for mult in (0.75, 0.90, 1.05, 1.25):
-            cand = HierarchicalCovarianceConfig(
-                student_t_df=nu,
-                nat_scale=round(base_nat * mult, 4),
-                ccaa_scale=round(base_ccaa * mult, 4),
-                prov_scale=round(base_prov * mult, 4),
-                bloc_right_scale=round(0.025 * mult, 4),
-                bloc_left_scale=round(0.025 * mult, 4),
-            )
-            m, _, _, _ = _evaluate_suite(
-                cal_cases,
-                "ensemble",
-                cand,
-                cal_hp,
-                n_sims=120,
-                seed=seed,
-            )
-            # Proper scoring + tight adherence to empirical 80%/95% coverage targets
-            cov_pen = (
-                2.5 * ((m.coverage_80_provincial_seats - 0.82) ** 2)
-                + 3.0 * ((m.coverage_95_provincial_seats - 0.95) ** 2)
-                + 1.0 * ((m.coverage_80_national_seats - 0.80) ** 2)
-            )
-            obj = m.brier_score + 0.12 * m.log_score + cov_pen
-            if obj < best_score:
-                best_score = obj
-                best_cfg = cand
+    for nu in (4.5, 5.5):
+        for nat_mult in (0.70, 0.85, 1.00, 1.15):
+            for local_mult in (0.65, 0.85, 1.05, 1.25):
+                cand = HierarchicalCovarianceConfig(
+                    student_t_df=nu,
+                    nat_scale=round(base_nat * nat_mult, 4),
+                    ccaa_scale=round(base_ccaa * local_mult, 4),
+                    prov_scale=round(base_prov * local_mult, 4),
+                    bloc_right_scale=round(0.025 * nat_mult, 4),
+                    bloc_left_scale=round(0.025 * nat_mult, 4),
+                )
+                m, _, _, _ = _evaluate_suite(
+                    cal_cases,
+                    "ensemble",
+                    cand,
+                    cal_hp,
+                    n_sims=140,
+                    seed=seed,
+                )
+                # Proper scoring + continuous 80%/95% vote & national seat coverage targets
+                cov_pen = (
+                    3.0 * ((m.coverage_80_provincial_votes - 0.80) ** 2)
+                    + 3.5 * ((m.coverage_95_provincial_votes - 0.95) ** 2)
+                    + 2.0 * ((m.coverage_80_national_votes - 0.80) ** 2)
+                    + 2.0 * ((m.coverage_95_national_votes - 0.95) ** 2)
+                    + 1.5 * ((m.coverage_80_national_seats - 0.80) ** 2)
+                    + 1.5 * ((m.coverage_95_national_seats - 0.95) ** 2)
+                )
+                obj = m.brier_score + 0.12 * m.log_score + cov_pen
+                if obj < best_score:
+                    best_score = obj
+                    best_cfg = cand
 
     return cal_hp, best_cfg, emp_hier
 
@@ -466,14 +524,15 @@ def run_backtest(
 
     for eid in election_ids:
         edate = HISTORICAL_ELECTION_DATES[eid]
-        # Zero-leakage LOOCV ratings: exclude held-out eid AND all 2026 polls
+        # Strictly causal ratings: exclude held-out eid, all future elections, and 2026 polls
+        causal_excluded = [e for e, d in HISTORICAL_ELECTION_DATES.items() if d >= edate]
         ratings_eid = compute_pollster_ratings(
             historical_polls=hist_polls,
             polls_2026=[],
             elections_dir=elec_root,
             polls_dir=polls_root,
             hyperparams=hyperparams,
-            exclude_election_ids=[eid],
+            exclude_election_ids=causal_excluded,
         )
         epolls = [p for p in hist_polls if p.election_id == eid]
         act_rows = {

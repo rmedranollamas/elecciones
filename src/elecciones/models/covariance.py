@@ -120,6 +120,8 @@ class SimulationArrays:
     prov_share_mean: np.ndarray
     prov_share_p10: np.ndarray
     prov_share_p90: np.ndarray
+    prov_share_p2_5: np.ndarray
+    prov_share_p97_5: np.ndarray
 
 
 def build_stage1_log_factor(
@@ -535,11 +537,15 @@ def run_hierarchical_monte_carlo(
     prov_share_mean = np.zeros((n_c, n_p), dtype=np.float64)
     prov_share_mean[act_r, act_c] = mean_a
 
-    q_a = np.percentile(q_samples_a, [10.0, 90.0], axis=0)
+    q_a = np.percentile(q_samples_a, [2.5, 10.0, 90.0, 97.5], axis=0)
+    prov_share_p2_5 = np.zeros((n_c, n_p), dtype=np.float64)
     prov_share_p10 = np.zeros((n_c, n_p), dtype=np.float64)
     prov_share_p90 = np.zeros((n_c, n_p), dtype=np.float64)
-    prov_share_p10[act_r, act_c] = np.minimum(mean_a, q_a[0].astype(np.float64))
-    prov_share_p90[act_r, act_c] = np.maximum(mean_a, q_a[1].astype(np.float64))
+    prov_share_p97_5 = np.zeros((n_c, n_p), dtype=np.float64)
+    prov_share_p2_5[act_r, act_c] = np.minimum(mean_a, q_a[0].astype(np.float64))
+    prov_share_p10[act_r, act_c] = np.minimum(mean_a, q_a[1].astype(np.float64))
+    prov_share_p90[act_r, act_c] = np.maximum(mean_a, q_a[2].astype(np.float64))
+    prov_share_p97_5[act_r, act_c] = np.maximum(mean_a, q_a[3].astype(np.float64))
 
     runtime_ms = (time.perf_counter() - t_start) * 1000.0
     return SimulationArrays(
@@ -553,4 +559,6 @@ def run_hierarchical_monte_carlo(
         prov_share_mean=prov_share_mean,
         prov_share_p10=prov_share_p10,
         prov_share_p90=prov_share_p90,
+        prov_share_p2_5=prov_share_p2_5,
+        prov_share_p97_5=prov_share_p97_5,
     )

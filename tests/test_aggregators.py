@@ -272,3 +272,88 @@ def test_run_stage1_ensemble_and_cli_ratings(tmp_path: Path) -> None:
         rows = list(csv.DictReader(fh))
     assert len(rows) >= 40
     assert any(r["pollster"] == "CIS" and r["grade"] == "C" for r in rows)
+
+
+def test_post_2023_sumar_split_causal_trend_series_and_kish_ess() -> None:
+    from elecciones.models import smooth_state_space
+
+    # 1. Post-2023 national poll with SUMAR (no explicit FA) splits strictly into FA + COMPROMIS_FV
+    post_sumar = _make_poll(
+        "Metroscopia",
+        date(2026, 11, 1),
+        date(2026, 11, 4),
+        {"PP": 0.31, "PSOE": 0.27, "VOX": 0.18, "SUMAR": 0.08, "PODEMOS": 0.04},
+    )
+    legacy_sumar = PollRecord(
+        election_id="2023-07",
+        pollster="Metroscopia",
+        media="Test",
+        fieldwork_start=date(2023, 7, 1),
+        fieldwork_end=date(2023, 7, 4),
+        sample_size=1200,
+        party_shares={"PP": 0.34, "PSOE": 0.28, "VOX": 0.13, "SUMAR": 0.13},
+    )
+    y_post, m_post = extract_poll_party_matrix(
+        [post_sumar], ("PP", "PSOE", "FA", "COMPROMIS_FV", "PODEMOS"), date(2026, 11, 10)
+    )
+    assert bool(m_post[0, 2]) and bool(m_post[0, 3])
+    assert abs(float(y_post[0, 2] + y_post[0, 3]) - 0.08) < 1e-12
+    assert abs(float(y_post[0, 4]) - 0.04) < 1e-12
+
+    y_leg, _ = extract_poll_party_matrix(
+        [legacy_sumar], ("PP", "PSOE", "FA", "PODEMOS"), date(2023, 7, 10)
+    )
+    assert abs(float(y_leg[0, 2]) - 0.13 * 0.64) < 1e-12
+    assert abs(float(y_leg[0, 3]) - 0.13 * 0.09) < 1e-12
+
+    # 2. Strictly causal trend_series: future polls inside window must NOT alter earlier grid points
+    base_p = [
+        _make_poll(
+            "40dB", date(2026, 10, 1), date(2026, 10, 3), {"PP": 0.31, "PSOE": 0.28, "VOX": 0.18}
+        ),
+        _make_poll(
+            "GAD3", date(2026, 10, 10), date(2026, 10, 12), {"PP": 0.32, "PSOE": 0.27, "VOX": 0.18}
+        ),
+        _make_poll(
+            "Sigma Dos",
+            date(2026, 10, 18),
+            date(2026, 10, 20),
+            {"PP": 0.31, "PSOE": 0.28, "VOX": 0.18},
+        ),
+    ]
+    # Add a huge outlier poll whose midpoint is 1 day after interior date 2026-10-20
+    future_bump = _make_poll(
+        "IMOP",
+        date(2026, 10, 20),
+        date(2026, 10, 22),
+        {"PP": 0.44, "PSOE": 0.18, "VOX": 0.14},
+    )
+    as_of = date(2026, 11, 20)
+    # Use fixed grid dates where 2026-10-20 falls cleanly before 2026-10-21 midpoint
+    r_base = aggregate_kernel(
+        base_p, as_of, tracked_parties=("PP", "PSOE", "VOX"), trend_days=60
+    )
+    r_fut = aggregate_kernel(
+        [*base_p, future_bump], as_of, tracked_parties=("PP", "PSOE", "VOX"), trend_days=60
+    )
+    g_dates = r_base.trend_series["dates"]
+    pre_idx = [i for i, d_s in enumerate(g_dates) if date.fromisoformat(d_s) < date(2026, 10, 21)]
+    post_idx = [
+        i for i, d_s in enumerate(g_dates) if date.fromisoformat(d_s) >= date(2026, 10, 21)
+    ]
+    assert pre_idx and post_idx
+    # Neither di == 0 (pre-first-poll) nor pre-bump dates suffer kernel spillover from future_bump
+    for idx in pre_idx:
+        fut_v = r_fut.trend_series["parties"]["PP"]["mean"][idx]
+        base_v = r_base.trend_series["parties"]["PP"]["mean"][idx]
+        assert abs(fut_v - base_v) < 0.01
+    assert (
+        r_fut.trend_series["parties"]["PP"]["mean"][post_idx[0]]
+        - r_base.trend_series["parties"]["PP"]["mean"][post_idx[0]]
+    ) >= 0.04
+
+    # 3. State-space Kish ESS is strictly < N_polls_used and handles post-2023 SUMAR cleanly
+    polls_26 = load_national_polls(get_polls_dir() / "national_2026.csv")
+    ss = smooth_state_space(polls_26, BLACKOUT_CUTOFF_DATE_2026)
+    assert 8.0 < ss.n_effective_polls < float(ss.n_polls_used)
+

@@ -273,9 +273,14 @@ def test_loocv_backtest_summary_and_cli_commands(tmp_path: Path) -> None:
         assert m_name in summary.models
         m = summary.models[m_name]
         assert 0.0 < m.vote_mae_national < 4.0
+        assert 0.0 < m.vote_mae_provincial < 4.0
         assert 0.0 < m.seat_mae_provincial < 1.2
-        assert 0.55 <= m.coverage_80_provincial_seats <= 0.98
+        assert 0.55 <= m.coverage_80_provincial_seats <= 0.99
         assert 0.80 <= m.coverage_95_provincial_seats <= 1.00
+        assert 0.55 <= m.coverage_80_provincial_votes <= 0.96
+        assert 0.80 <= m.coverage_95_provincial_votes <= 0.99
+        assert 0.50 <= m.coverage_80_national_votes <= 0.99
+        assert 0.75 <= m.coverage_95_national_votes <= 1.00
 
     # Tier monotonicity: seguro hit_rate >= probable hit_rate >= en_juego hit_rate >= remoto
     tc = summary.tier_calibration
@@ -317,3 +322,36 @@ def test_loocv_backtest_summary_and_cli_commands(tmp_path: Path) -> None:
     if committed_bt.is_file():
         data = json.loads(committed_bt.read_text(encoding="utf-8"))
         assert BacktestSummary.from_dict(data).total_constituency_races == 260
+
+
+def test_model_backtest_metrics_legacy_compatibility_and_causal_ratings() -> None:
+    from elecciones.models import compute_pollster_ratings
+    from elecciones.schemas import ModelBacktestMetrics
+
+    legacy = ModelBacktestMetrics(0.1, -0.2, 3.0, 0.2, 1.1, 0.8, 0.95, 0.8, 0.95)
+    assert legacy.vote_mae_provincial == 0.0
+    assert legacy.coverage_95_national_votes == 0.0
+    from_old_dict = ModelBacktestMetrics.from_dict(
+        {
+            "brier_score": 0.1,
+            "log_score": -0.2,
+            "vote_mae_national": 3.0,
+            "seat_mae_provincial": 0.2,
+            "seat_mae_national": 1.1,
+            "coverage_80_provincial_seats": 0.8,
+            "coverage_95_provincial_seats": 0.95,
+            "coverage_80_national_seats": 0.8,
+            "coverage_95_national_seats": 0.95,
+        }
+    )
+    assert from_old_dict.coverage_80_provincial_votes == 0.0
+
+    # Strictly excluding all elections for 2015-12 produces an empty ratings list without errors
+    empty_ratings = compute_pollster_ratings(
+        polls_2026=[],
+        exclude_election_ids=list(
+            ("2015-12", "2016-06", "2019-04", "2019-11", "2023-07")
+        ),
+    )
+    assert empty_ratings == []
+

@@ -249,3 +249,50 @@ def test_navarra_split_poll_sums_and_stage2_reanchors_nationwide_totals() -> Non
         cis_prov={},
     )
     assert np.allclose(p_split.final_matrix, p_merged.final_matrix, atol=1e-10)
+
+
+def test_stage2_weight_normalization_aragon_cha_and_madrid_ie_exclusion() -> None:
+    polls_26 = load_national_polls(get_polls_dir() / "national_2026.csv")
+    as_of = date(2026, 11, 16)
+    s1 = run_stage1(polls_26, as_of, engine="ensemble", compute_cis_sensitivity=False)
+
+    # 1. Properly normalized weights keep cis_weight + regional_poll_weight strictly inside [0, 1)
+    proj = project_2026_provinces(s1.mean_shares, as_of)
+    for dist in proj.districts.values():
+        assert 0.0 <= dist.cis_weight < 1.0
+        assert 0.0 <= dist.regional_poll_weight < 1.0
+        assert dist.cis_weight + dist.regional_poll_weight < 1.0
+
+    # 2. Unproclaimed push poll >6% (e.g. Madrid IE) is ignored, whereas Aragón CHA updates Zaragoza
+    ie_push = RegionalPollRecord(
+        scope_type="ccaa",
+        scope_code="13",
+        pollster="TestPoll",
+        fieldwork_start=date(2026, 11, 12),
+        fieldwork_end=date(2026, 11, 15),
+        sample_size=2000,
+        party_shares={"PP": 0.25, "PSOE": 0.45, "VOX": 0.14, "IE": 0.12},
+    )
+    p_base = project_2026_provinces(
+        s1.mean_shares, as_of, regional_polls=[], cis_prov={}
+    )
+    p_push = project_2026_provinces(
+        s1.mean_shares, as_of, regional_polls=[ie_push], cis_prov={}
+    )
+    assert np.allclose(p_base.final_matrix, p_push.final_matrix, atol=1e-12)
+
+    aragon_cha = RegionalPollRecord(
+        scope_type="ccaa",
+        scope_code="02",
+        pollster="TestPoll",
+        fieldwork_start=date(2026, 11, 12),
+        fieldwork_end=date(2026, 11, 15),
+        sample_size=2000,
+        party_shares={"PP": 0.34, "PSOE": 0.25, "VOX": 0.18, "CHA": 0.12},
+    )
+    p_cha = project_2026_provinces(
+        s1.mean_shares, as_of, regional_polls=[aragon_cha], cis_prov={}
+    )
+    assert p_cha.districts["50"].final_shares["FA"] > p_base.districts["50"].final_shares["FA"]
+    assert p_cha.districts["44"].final_shares["FA"] == 0.0
+

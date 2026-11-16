@@ -180,6 +180,30 @@ def compute_wave_overlap_penalties(polls: Sequence[PollRecord | RegionalPollReco
     return penalties
 
 
+def _non_recency_poll_weight(
+    poll: PollRecord,
+    overlap_u_i: float,
+    ratings_map: dict[str, PollsterRatingRecord] | None,
+    hyperparams: ModelHyperparameters,
+) -> float:
+    """Compute sample-cap x pollster-quality x herding x overlap weight."""
+    cap = (
+        hyperparams.sample_size_cap_cis
+        if poll.is_cis
+        else hyperparams.sample_size_cap_general
+    )
+    n_eff = min(poll.sample_size or 1000, cap)
+    w_sample = math.sqrt(max(100, n_eff) / 1000.0)
+
+    rating = ratings_map.get(poll.pollster) if ratings_map else None
+    if rating is not None:
+        w_qual = max(0.10, rating.grade_weight) * max(0.25, rating.herding_penalty)
+    else:
+        w_qual = 0.45 if poll.is_cis else 1.0
+
+    return w_sample * w_qual * overlap_u_i
+
+
 def compute_poll_weights(
     polls: Sequence[PollRecord],
     as_of: date,
@@ -212,21 +236,9 @@ def compute_poll_weights(
         # Trim ancient noise (> 12 half-lives) cleanly
         eff_age = min(240.0, age_days)
         w_time = math.exp(-decay_rate * eff_age)
-        cap = (
-            hyperparams.sample_size_cap_cis
-            if poll.is_cis
-            else hyperparams.sample_size_cap_general
+        weights[i] = w_time * _non_recency_poll_weight(
+            poll, float(overlap_u[i]), ratings_map, hyperparams
         )
-        n_eff = min(poll.sample_size or 1000, cap)
-        w_sample = math.sqrt(max(100, n_eff) / 1000.0)
-
-        rating = ratings_map.get(poll.pollster) if ratings_map else None
-        if rating is not None:
-            w_qual = max(0.10, rating.grade_weight) * max(0.25, rating.herding_penalty)
-        else:
-            w_qual = 0.45 if poll.is_cis else 1.0
-
-        weights[i] = w_time * w_sample * w_qual * overlap_u[i]
     return weights, overlap_u
 
 
@@ -258,7 +270,9 @@ def extract_poll_party_matrix(
     """Extract observation matrix ``Y`` and availability mask ``O`` of shape ``(N_polls, K)``.
 
     Missing party cells remain masked (``O[i, k] = False``) rather than coerced to ``0.0``.
-    Combined ``FA_FV`` cells are split according to empirical contemporaneous ``FA / (FA+FV)``.
+    Combined ``FA_FV`` cells (and post-2023 ``SUMAR`` rows where ``FA``/``FA_FV`` are absent
+    and ``PODEMOS``/``ADELANTE`` are reported separately) split according to empirical
+    contemporaneous ``FA / (FA+FV)``.
     """
     n_p = len(polls)
     k = len(tracked_parties)
@@ -267,14 +281,8 @@ def extract_poll_party_matrix(
     obs_mask = np.zeros((n_p, k), dtype=bool)
     fa_split = infer_fa_fv_split(polls, ref_date)
 
-    # Check if explicit FA / FA_FV observations already exist in recent window
-    has_recent_fa = any(
-        ("FA" in p.party_shares or "FA_FV" in p.party_shares)
-        and (ref_date - p.fieldwork_end).days <= 35
-        for p in polls
-    )
-
     for i, poll in enumerate(polls):
+        has_explicit_fa_or_fv = "FA" in poll.party_shares or "FA_FV" in poll.party_shares
         for party, val in poll.party_shares.items():
             if party in p_idx:
                 col = p_idx[party]
@@ -282,23 +290,49 @@ def extract_poll_party_matrix(
                 obs_mask[i, col] = True
             elif party == "FA_FV":
                 fv_val = val
-                if "FA" in p_idx and not obs_mask[i, p_idx["FA"]]:
+                if (
+                    "FA" in p_idx
+                    and "FA" not in poll.party_shares
+                    and not obs_mask[i, p_idx["FA"]]
+                ):
                     y_mat[i, p_idx["FA"]] = fv_val * fa_split
                     obs_mask[i, p_idx["FA"]] = True
-                if "COMPROMIS_FV" in p_idx and not obs_mask[i, p_idx["COMPROMIS_FV"]]:
+                if (
+                    "COMPROMIS_FV" in p_idx
+                    and "COMPROMIS_FV" not in poll.party_shares
+                    and not obs_mask[i, p_idx["COMPROMIS_FV"]]
+                ):
                     y_mat[i, p_idx["COMPROMIS_FV"]] = fv_val * (1.0 - fa_split)
                     obs_mask[i, p_idx["COMPROMIS_FV"]] = True
             elif (
                 party == "SUMAR"
-                and (allow_legacy_sumar_split or not has_recent_fa)
+                and not has_explicit_fa_or_fv
                 and "FA" in p_idx
                 and not obs_mask[i, p_idx["FA"]]
             ):
-                # Pre-split 2023–early Oct 2026 SUMAR fallback
-                for sub_p, frac in _LEGACY_SUMAR_WEIGHTS.items():
-                    if sub_p in p_idx and not obs_mask[i, p_idx[sub_p]]:
-                        y_mat[i, p_idx[sub_p]] = val * frac
-                        obs_mask[i, p_idx[sub_p]] = True
+                if allow_legacy_sumar_split or poll.fieldwork_end < date(2024, 1, 1):
+                    # Pre-split era (2023/legacy): Podemos & Adelante bundled inside Sumar
+                    for sub_p, frac in _LEGACY_SUMAR_WEIGHTS.items():
+                        if (
+                            sub_p in p_idx
+                            and sub_p not in poll.party_shares
+                            and not obs_mask[i, p_idx[sub_p]]
+                        ):
+                            y_mat[i, p_idx[sub_p]] = val * frac
+                            obs_mask[i, p_idx[sub_p]] = True
+                else:
+                    # 2024–Oct 2026 national polls already report Podemos & Adelante separately;
+                    # SUMAR corresponds directly to FA + Compromís-FV.
+                    has_explicit_fv = "COMPROMIS_FV" in poll.party_shares
+                    if not has_explicit_fv and "COMPROMIS_FV" in p_idx:
+                        y_mat[i, p_idx["FA"]] = val * fa_split
+                        obs_mask[i, p_idx["FA"]] = True
+                        if not obs_mask[i, p_idx["COMPROMIS_FV"]]:
+                            y_mat[i, p_idx["COMPROMIS_FV"]] = val * (1.0 - fa_split)
+                            obs_mask[i, p_idx["COMPROMIS_FV"]] = True
+                    else:
+                        y_mat[i, p_idx["FA"]] = val
+                        obs_mask[i, p_idx["FA"]] = True
     return y_mat, obs_mask
 
 
@@ -629,16 +663,13 @@ def aggregate_kernel(
     }
     for di, g_ord in enumerate(grid_ords):
         dt = g_ord - est_ords
-        # Causal up to each plotted date for realistic historical campaign trace
-        causal = est_ords <= g_ord + 1.5
+        # Strictly causal up to each plotted date for faithful historical campaign trace
+        causal = est_ords <= g_ord
         k_t = np.where(causal, np.exp(-0.5 * (np.abs(dt) / 9.0) ** 2), 0.0)
-        # Re-multiply sample * quality * overlap without global recency to trace campaign path
+        # Re-multiply sample * quality * herding * overlap without global recency
         base_q = np.array(
             [
-                math.sqrt(min(p.sample_size or 1000, 4000) / 1000.0)
-                * (ratings_map[p.pollster].grade_weight if p.pollster in ratings_map else 1.0)
-                * est_u[i]
-                * (0.45 if p.is_cis else 1.0)
+                _non_recency_poll_weight(p, float(est_u[i]), ratings_map, hyperparams)
                 for i, p in enumerate(est_polls)
             ],
             dtype=np.float64,
@@ -648,9 +679,27 @@ def aggregate_kernel(
             col = parties.index(p)
             m = est_obs[:, col] & (w_t > 1e-8)
             if not np.any(m):
-                prev_m = trend_parties[p]["mean"][-1] if di > 0 else mean_shares[p]
-                prev_lo = trend_parties[p]["p10"][-1] if di > 0 else max(0.0, prev_m - 0.015)
-                prev_hi = trend_parties[p]["p90"][-1] if di > 0 else min(1.0, prev_m + 0.015)
+                if di > 0:
+                    prev_m = trend_parties[p]["mean"][-1]
+                    prev_lo = trend_parties[p]["p10"][-1]
+                    prev_hi = trend_parties[p]["p90"][-1]
+                else:
+                    # Before the first poll in the window, anchor on the earliest poll(s)
+                    # rather than leaking the future end-of-window mean backward.
+                    col_mask = est_obs[:, col] & (base_q > 1e-8)
+                    if np.any(col_mask):
+                        e_ord = float(np.min(est_ords[col_mask]))
+                        e_m = col_mask & (est_ords <= e_ord + 1e-9)
+                        ws_e = base_q[e_m]
+                        ys_e = adj_y[e_m, col]
+                        prev_m = float(np.sum(ws_e * ys_e) / max(1e-12, float(ws_e.sum())))
+                        se_e = math.sqrt(max(1.2e-5, prev_m * (1.0 - prev_m) / 2500.0))
+                        prev_lo = max(0.0, prev_m - 1.28155 * se_e)
+                        prev_hi = min(1.0, prev_m + 1.28155 * se_e)
+                    else:
+                        prev_m = mean_shares[p]
+                        prev_lo = max(0.0, prev_m - 0.015)
+                        prev_hi = min(1.0, prev_m + 0.015)
                 trend_parties[p]["mean"].append(round(prev_m, 5))
                 trend_parties[p]["p10"].append(round(prev_lo, 5))
                 trend_parties[p]["p90"].append(round(prev_hi, 5))

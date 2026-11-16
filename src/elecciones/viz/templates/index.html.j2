@@ -610,9 +610,9 @@
       <div class="kpi-grid" id="hero-kpis">
         {% for p in top_parties[:3] %}
         <div class="kpi-card">
-          <div class="kpi-label">{{ p.short_name }} (Media simulada)</div>
+          <div class="kpi-label">{{ p.short_name }} (Mediana simulada)</div>
           <div class="kpi-val tabular">{{ p.median }} escaños</div>
-          <div class="kpi-sub tabular">{{ p.vote_pct }}% voto · 80%: {{ p.p10 }}–{{ p.p90 }}</div>
+          <div class="kpi-sub tabular">{{ p.vote_pct }}% voto · Media {{ "%.1f"|format(p.mean_seats) }} · 80%: {{ p.p10 }}–{{ p.p90 }}</div>
         </div>
         {% endfor %}
         <div class="kpi-card">
@@ -710,7 +710,7 @@
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px;">
             <div>
               <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;" id="insp-ccaa">—</div>
-              <h3 style="margin:2px 0 0;font-family:var(--font-serif);font-size:1.35rem;" id="insp-title">Madrid (28)</h3>
+              <h3 style="margin:2px 0 0;font-family:var(--font-serif);font-size:1.35rem;" id="insp-title">Madrid — 38 escaños</h3>
             </div>
             <div class="tabular" style="text-align:right;font-size:12.5px;" id="insp-meta">—</div>
           </div>
@@ -873,12 +873,12 @@
                 <thead>
                   <tr>
                     <th>Motor</th>
-                    <th class="num">MAE Voto (pp)</th>
-                    <th class="num">MAE Esc. Prov</th>
-                    <th class="num">MAE Esc. Nac</th>
-                    <th class="num">Brier</th>
-                    <th class="num">Cov 80% P/N</th>
-                    <th class="num">Cov 95% P/N</th>
+                    <th class="num">MAE Voto P/N</th>
+                    <th class="num">MAE Esc. P/N</th>
+                    <th class="num">Brier / Log</th>
+                    <th class="num">Cov Voto 80/95 (P)</th>
+                    <th class="num">Cov Voto 80/95 (N)</th>
+                    <th class="num">Cov Esc. 80/95 (N)</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -897,11 +897,11 @@
                   <thead>
                     <tr>
                       <th>Elección</th>
-                      <th class="num">MAE Voto</th>
-                      <th class="num">MAE Esc. Prov</th>
-                      <th class="num">MAE Esc. Nac</th>
+                      <th class="num">MAE Voto P/N</th>
+                      <th class="num">MAE Esc. P/N</th>
                       <th class="num">Brier</th>
-                      <th class="num">Cov 80% / 95%</th>
+                      <th class="num">Cov Voto 80/95 (P)</th>
+                      <th class="num">Cov Esc. 80/95 (N)</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -1009,8 +1009,8 @@
       function fmtNum(val, digits = 1) { return Number(val || 0).toFixed(digits); }
       function fmtInt(val) { return Math.round(Number(val || 0)).toLocaleString("es-ES"); }
 
-      // LOREG Art. 163 exact client-side D'Hondt solver (provincial 3% over valid incl. blank; Ceuta/Melilla plurality)
-      function allocateDistrictDhondt(seats, partyVotesObj, blankVotes, isCity) {
+      // LOREG Art. 163 exact client-side D'Hondt solver + quotients & last-seat battle
+      function allocateDistrictDhondtDetailed(seats, partyVotesObj, blankVotes, isCity) {
         let valid = Number(blankVotes || 0);
         const entries = [];
         for (const [p, vRaw] of Object.entries(partyVotesObj)) {
@@ -1021,30 +1021,74 @@
           }
         }
         const alloc = {};
-        if (valid <= 0 || entries.length === 0) return alloc;
+        const quotients = {};
+        if (valid <= 0 || entries.length === 0) {
+          return { seats: alloc, quotients, lastSeatBattle: null };
+        }
         const elig = entries.filter(([, v]) => (isCity ? v > 0 : (v / valid) >= 0.03));
-        if (elig.length === 0) return alloc;
+        if (elig.length === 0) {
+          return { seats: alloc, quotients, lastSeatBattle: null };
+        }
+        let lastHolder = elig[0][0];
+        let cutoffQuotient = 0;
         if (isCity) {
           elig.sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]));
-          alloc[elig[0][0]] = seats;
-          return alloc;
-        }
-        for (const [p] of elig) alloc[p] = 0;
-        for (let k = 0; k < seats; k++) {
-          let bestP = elig[0][0];
-          let bestQ = -1;
-          let bestV = -1;
-          for (const [p, v] of elig) {
-            const q = v / (alloc[p] + 1);
-            if (q > bestQ || (q === bestQ && v > bestV)) {
-              bestQ = q;
-              bestV = v;
-              bestP = p;
+          lastHolder = elig[0][0];
+          alloc[lastHolder] = seats;
+          cutoffQuotient = elig[0][1];
+        } else {
+          for (const [p] of elig) alloc[p] = 0;
+          for (let k = 0; k < seats; k++) {
+            let bestP = elig[0][0];
+            let bestQ = -1;
+            let bestV = -1;
+            for (const [p, v] of elig) {
+              const q = v / (alloc[p] + 1);
+              if (q > bestQ || (q === bestQ && v > bestV)) {
+                bestQ = q;
+                bestV = v;
+                bestP = p;
+              }
             }
+            alloc[bestP] += 1;
+            lastHolder = bestP;
+            cutoffQuotient = bestQ;
           }
-          alloc[bestP] += 1;
         }
-        return alloc;
+
+        for (const [p, v] of elig) {
+          const maxD = isCity ? 1 : Math.min(seats, (alloc[p] || 0) + 1);
+          const arr = [];
+          for (let d = 1; d <= maxD; d++) arr.push(v / d);
+          quotients[p] = arr;
+        }
+
+        const threshVotes = isCity ? 0 : 0.03 * valid;
+        const runners = [];
+        for (const [p, vp] of entries) {
+          if (p === lastHolder) continue;
+          if (vp <= 0 && entries.length > 10) continue;
+          const nextD = isCity ? 1 : ((alloc[p] || 0) + 1);
+          const reqVotes = Math.max(threshVotes, nextD * cutoffQuotient);
+          const gapRaw = Math.max(0, reqVotes - vp);
+          const gapPp = (100.0 * gapRaw) / valid;
+          const gapAbs = valid > 10.0 ? Math.ceil(gapRaw) : 0;
+          runners.push({ party: p, vote_gap_pp: gapPp, vote_gap_abs: gapAbs });
+        }
+        runners.sort((a, b) => (a.vote_gap_pp - b.vote_gap_pp) || (a.vote_gap_abs - b.vote_gap_abs) || a.party.localeCompare(b.party));
+        return {
+          seats: alloc,
+          quotients,
+          lastSeatBattle: {
+            holder: lastHolder,
+            cutoff_quotient: cutoffQuotient,
+            runners_up: runners.slice(0, 3),
+          },
+        };
+      }
+
+      function allocateDistrictDhondt(seats, partyVotesObj, blankVotes, isCity) {
+        return allocateDistrictDhondtDetailed(seats, partyVotesObj, blankVotes, isCity).seats;
       }
 
       // Apply national vote-share multiplier shift cleanly onto masked 52 districts & run D'Hondt
@@ -1067,25 +1111,31 @@
           }
           const targetSum = Math.max(0.85, 1.0 - con.blank_share);
           const normShares = {};
-          const seatCands = {};
+          const w = con.validos_prior || 100000;
+          const seatVotes = {};
           let effBlank = Number(con.blank_share || 0);
           for (const [p, adj] of Object.entries(candRaw)) {
             const sh = candSum > 0 ? (adj / candSum) * targetSum : 0;
             normShares[p] = sh;
             // Keep synthetic residual "OTROS" in valid votes without winning individual seats
             if (p === "OTROS") effBlank += sh;
-            else seatCands[p] = sh;
+            else seatVotes[p] = sh * w;
           }
-          const dSeats = allocateDistrictDhondt(con.seats_2026, seatCands, effBlank, isCity);
-          const w = con.validos_prior || 100000;
+          const dRes = allocateDistrictDhondtDetailed(con.seats_2026, seatVotes, effBlank * w, isCity);
           totValid += w;
           for (const [p, s] of Object.entries(normShares)) {
             natVotes[p] = (natVotes[p] || 0) + s * w;
           }
-          for (const [p, sc] of Object.entries(dSeats)) {
+          for (const [p, sc] of Object.entries(dRes.seats)) {
             natSeats[p] = (natSeats[p] || 0) + sc;
           }
-          distResults.push({ cpro: con.cpro, seats: dSeats, shares: normShares });
+          distResults.push({
+            cpro: con.cpro,
+            seats: dRes.seats,
+            shares: normShares,
+            quotients: dRes.quotients,
+            lastSeatBattle: dRes.lastSeatBattle,
+          });
         }
         const natShares = {};
         for (const [p, vw] of Object.entries(natVotes)) {
@@ -1129,11 +1179,11 @@
         for (const pid of DATA.party_order) {
           const bE = Number(baseEngShares[pid] || 0);
           const cE = Number(engShares[pid] !== undefined ? engShares[pid] : bE);
-          const rE = bE > 0.002 ? cE / bE : 1.0;
+          const rE = bE > 1e-5 ? cE / bE : 1.0;
 
           const bC = Number((cisBase.mean_shares || {})[pid] || 0);
           const cC = Number((cisCur.mean_shares || {})[pid] || bC);
-          const rC = bC > 0.002 ? cC / bC : 1.0;
+          const rC = bC > 1e-5 ? cC / bC : 1.0;
 
           mult[pid] = Math.max(0.25, Math.min(3.0, rE * rC));
         }
@@ -1311,18 +1361,36 @@
         const heroEl = document.getElementById("hero-kpis");
         if (heroEl) {
           const byId = Object.fromEntries(displayRows.map(r => [r.pid, r]));
-          const ppR = byId.PP || { sMed: 0, vsMean: 0, sP10: 0, sP90: 0 };
-          const psR = byId.PSOE || { sMed: 0, vsMean: 0, sP10: 0, sP90: 0 };
-          const vxR = byId.VOX || { sMed: 0, vsMean: 0, sP10: 0, sP90: 0 };
+          const ppR = byId.PP || { sMed: 0, sMean: 0, vsMean: 0, sP10: 0, sP90: 0 };
+          const psR = byId.PSOE || { sMed: 0, sMean: 0, vsMean: 0, sP10: 0, sP90: 0 };
+          const vxR = byId.VOX || { sMed: 0, sMean: 0, vsMean: 0, sP10: 0, sP90: 0 };
           const upnR = byId.UPN_PP || { sMed: 0 };
           const rightMed = (ppR.sMed || 0) + (vxR.sMed || 0) + (upnR.sMed || 0);
           const ppVxProb = ((((DATA.investiture || {}).first_ballot || {}).pp_vox || {}).prob || 0) * 100;
           const deadProb = ((DATA.investiture || {}).deadlock_prob || 0) * 100;
           const cards = [
-            ["PP (Escaños)", `${ppR.sMed} escaños`, `${fmtPct(ppR.vsMean, 1)} voto · ${cf ? "Contrafactual" : `80%: ${ppR.sP10}–${ppR.sP90}`}`],
-            ["PSOE (Escaños)", `${psR.sMed} escaños`, `${fmtPct(psR.vsMean, 1)} voto · ${cf ? "Contrafactual" : `80%: ${psR.sP10}–${psR.sP90}`}`],
-            ["Vox (Escaños)", `${vxR.sMed} escaños`, `${fmtPct(vxR.vsMean, 1)} voto · ${cf ? "Contrafactual" : `80%: ${vxR.sP10}–${vxR.sP90}`}`],
-            [cf ? "PP + UPN + Vox (Contrafactual)" : "PP + Vox (≥ 176) · Bloqueo Art. 99.5", cf ? `${rightMed} escaños` : `${ppVxProb.toFixed(1)}%`, cf ? (rightMed >= 176 ? "Alcanza mayoría absoluta (≥176)" : `A ${176 - rightMed} escaños de mayoría`) : `Bloqueo institucional: ${deadProb.toFixed(1)}%`],
+            [
+              cf ? "PP (Contrafactual)" : "PP (Mediana simulada)",
+              `${ppR.sMed} escaños`,
+              `${fmtPct(ppR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(ppR.sMean, 1)} · 80%: ${ppR.sP10}–${ppR.sP90}`}`
+            ],
+            [
+              cf ? "PSOE (Contrafactual)" : "PSOE (Mediana simulada)",
+              `${psR.sMed} escaños`,
+              `${fmtPct(psR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(psR.sMean, 1)} · 80%: ${psR.sP10}–${psR.sP90}`}`
+            ],
+            [
+              cf ? "Vox (Contrafactual)" : "Vox (Mediana simulada)",
+              `${vxR.sMed} escaños`,
+              `${fmtPct(vxR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(vxR.sMean, 1)} · 80%: ${vxR.sP10}–${vxR.sP90}`}`
+            ],
+            [
+              cf ? "PP + UPN + Vox (Contrafactual)" : "PP + Vox (≥ 176) · Bloqueo Art. 99.5",
+              cf ? `${rightMed} escaños` : `${ppVxProb.toFixed(1)}%`,
+              cf
+                ? (rightMed >= 176 ? "Alcanza mayoría absoluta (≥176)" : `A ${176 - rightMed} escaños de mayoría`)
+                : `Bloqueo institucional: ${deadProb.toFixed(1)}%`
+            ],
           ];
           heroEl.innerHTML = cards.map(([lbl, val, sub]) => `
             <div class="kpi-card">
@@ -1419,10 +1487,89 @@
       }
 
       // 52-PROVINCE CARTOGRAM & D'HONDT INSPECTOR
+      function getActiveDistrictState() {
+        const cf = isCounterfactualMode();
+        const { solved, movedCount } = computeCurrentWhatIf();
+        const isModified = cf || movedCount > 0;
+        if (!isModified) {
+          return {
+            isModified: false,
+            constituencies: DATA.constituencies,
+            byCpro: Object.fromEntries(DATA.constituencies.map(c => [c.cpro, c])),
+            battlegrounds: DATA.battlegrounds || [],
+          };
+        }
+
+        const baseByCpro = Object.fromEntries(DATA.constituencies.map(c => [c.cpro, c]));
+        const synthConsts = [];
+        const synthBgs = [];
+        for (const dr of solved.distResults) {
+          const baseCon = baseByCpro[dr.cpro];
+          if (!baseCon) continue;
+          const pp = {};
+          const keys = new Set([
+            ...Object.keys(baseCon.party_projections || {}),
+            ...Object.keys(dr.shares || {}).filter(p => p !== "OTROS"),
+          ]);
+          for (const pid of keys) {
+            const sh = Number((dr.shares || {})[pid] || 0);
+            if (sh <= 0) continue;
+            const sc = Number((dr.seats || {})[pid] || 0);
+            pp[pid] = {
+              vote_share_mean: sh,
+              vote_share_p10: sh,
+              vote_share_p90: sh,
+              seats_mean: sc,
+              seats_median: sc,
+              seats_p10: sc,
+              seats_p90: sc,
+              seguros: sc,
+              probables: 0,
+              en_juego: 0,
+            };
+          }
+          const synthCon = {
+            cpro: baseCon.cpro,
+            name: baseCon.name,
+            codauto: baseCon.codauto,
+            seats_2026: baseCon.seats_2026,
+            turnout_mean: baseCon.turnout_mean,
+            blank_share: baseCon.blank_share,
+            validos_prior: baseCon.validos_prior,
+            final_shares: dr.shares,
+            party_projections: pp,
+            seat_slots: [],
+            dhondt_quotients: dr.quotients || {},
+            last_seat_battle: dr.lastSeatBattle,
+          };
+          synthConsts.push(synthCon);
+          const lsb = dr.lastSeatBattle;
+          if (lsb && lsb.runners_up && lsb.runners_up.length > 0) {
+            synthBgs.push({
+              cpro: baseCon.cpro,
+              name: baseCon.name,
+              seats_2026: baseCon.seats_2026,
+              holder: lsb.holder,
+              challenger: lsb.runners_up[0].party,
+              vote_gap_pp: lsb.runners_up[0].vote_gap_pp,
+              vote_gap_abs: lsb.runners_up[0].vote_gap_abs,
+            });
+          }
+        }
+        synthBgs.sort((a, b) => (a.vote_gap_pp - b.vote_gap_pp) || a.cpro.localeCompare(b.cpro));
+        return {
+          isModified: true,
+          constituencies: synthConsts,
+          byCpro: Object.fromEntries(synthConsts.map(c => [c.cpro, c])),
+          battlegrounds: synthBgs,
+        };
+      }
+
       function renderCartogram() {
         const grid = document.getElementById("cartogram-grid");
         grid.innerHTML = "";
-        const sorted = [...DATA.constituencies].sort((a, b) => a.cpro.localeCompare(b.cpro));
+        const activeState = getActiveDistrictState();
+        const sorted = [...activeState.constituencies].sort((a, b) => a.cpro.localeCompare(b.cpro));
 
         for (const con of sorted) {
           const meta = CONST_META[con.cpro] || { cartogram_row: 0, cartogram_col: 0, short_name: con.name };
@@ -1433,6 +1580,7 @@
 
           // Leader & gap info
           const topParty = Object.entries(con.party_projections || {})
+            .filter(([pid]) => pid !== "OTROS")
             .sort((a, b) => b[1].seats_mean - a[1].seats_mean || b[1].vote_share_mean - a[1].vote_share_mean)[0];
           const winnerId = topParty ? topParty[0] : "PSOE";
           const gapPp = con.last_seat_battle && con.last_seat_battle.runners_up && con.last_seat_battle.runners_up[0]
@@ -1452,7 +1600,7 @@
           } else if (STATE.mapMode === "en_juego") {
             bg = enJuego >= 3 ? "#7c2d12" : enJuego === 2 ? "#c2410c" : enJuego === 1 ? "#f97316" : "#e2e8f0";
             ink = contrastInk(bg);
-            tagText = `${enJuego} jg`;
+            tagText = activeState.isModified ? "det." : `${enJuego} jg`;
           }
 
           div.style.background = bg;
@@ -1470,7 +1618,7 @@
             renderDistrictInspector();
           });
           div.addEventListener("mouseenter", evt => {
-            showTip(evt, `<strong>${esc(con.name)} (${con.cpro})</strong> · ${con.seats_2026} escaños<br>Líder: <strong>${esc(pShort(winnerId))}</strong> (${fmtPct(topParty ? topParty[1].vote_share_mean : 0, 1)})<br>Margen último escaño: ${gapPp.toFixed(2)} pp · ${enJuego} en juego`);
+            showTip(evt, `<strong>${esc(con.name)} (${con.cpro})</strong> · ${con.seats_2026} escaños<br>Líder: <strong>${esc(pShort(winnerId))}</strong> (${fmtPct(topParty ? topParty[1].vote_share_mean : 0, 1)})<br>Margen último escaño: ${gapPp.toFixed(2)} pp${activeState.isModified ? " · Simulado" : ` · ${enJuego} en juego`}`);
           });
           div.addEventListener("mouseleave", hideTip);
           grid.appendChild(div);
@@ -1479,7 +1627,8 @@
 
       function renderBattlegrounds() {
         const tbody = document.querySelector("#battlegrounds-table tbody");
-        const rows = (DATA.battlegrounds || []).slice(0, 8);
+        const activeState = getActiveDistrictState();
+        const rows = (activeState.battlegrounds || []).slice(0, 8);
         tbody.innerHTML = rows.map(b => `
           <tr class="clickable" data-cpro="${esc(b.cpro)}">
             <td><strong>${esc(b.name)}</strong></td>
@@ -1500,16 +1649,18 @@
       }
 
       function renderDistrictInspector() {
-        const con = DATA.constituencies.find(c => c.cpro === STATE.selectedCpro) || DATA.constituencies[0];
+        const activeState = getActiveDistrictState();
+        const con = activeState.byCpro[STATE.selectedCpro] || activeState.constituencies[0];
         if (!con) return;
+        const det = activeState.isModified;
         const meta = CONST_META[con.cpro] || {};
         const isCity = con.cpro === "51" || con.cpro === "52";
 
-        document.getElementById("insp-ccaa").textContent = `${meta.ccaa_name || "Comunidad Autónoma"} · CPRO ${con.cpro}`;
+        document.getElementById("insp-ccaa").textContent = `${meta.ccaa_name || "Comunidad Autónoma"} · CPRO ${con.cpro}${det ? " · ESCENARIO SIMULADO" : ""}`;
         document.getElementById("insp-title").textContent = `${con.name} — ${con.seats_2026} ${con.seats_2026 === 1 ? "escaño" : "escaños"}`;
         document.getElementById("insp-meta").innerHTML = `
           Participación est.: <strong>${fmtPct(con.turnout_mean, 1)}</strong> · En blanco: <strong>${fmtPct(con.blank_share, 2)}</strong><br>
-          ${isCity ? "Ciudad Autónoma: 0% mayoría simple" : "Barrera legal LOREG Art. 163: <strong>3,0%</strong> s/ voto válido"}
+          ${isCity ? "Ciudad Autónoma: 0% mayoría simple" : "Barrera legal LOREG Art. 163: <strong>3,0%</strong> s/ voto válido"}${det ? " · <em>D'Hondt determinista</em>" : ""}
         `;
 
         const lsb = con.last_seat_battle || { holder: "", cutoff_quotient: 0, runners_up: [] };
@@ -1538,10 +1689,10 @@
                 <span class="party-chip"><span class="dot" style="background:${pColor(pid)}"></span>${esc(pShort(pid))}</span>
                 ${belowBarrier ? '<span class="muted" style="font-size:10.5px;">(&lt;3%)</span>' : ""}
               </td>
-              <td class="num">${fmtPct(pr.vote_share_mean, 1)} <span class="muted">(${fmtPct(pr.vote_share_p10, 1)}–${fmtPct(pr.vote_share_p90, 1)})</span></td>
-              <td class="num"><strong>${fmtNum(pr.seats_mean, 2)}</strong></td>
-              <td class="num">${pr.seats_p10}–${pr.seats_p90}</td>
-              <td class="num">${pr.seguros} / ${pr.probables} / ${pr.en_juego}</td>
+              <td class="num">${det ? `<strong>${fmtPct(pr.vote_share_mean, 1)}</strong> <span class="muted">(sim.)</span>` : `${fmtPct(pr.vote_share_mean, 1)} <span class="muted">(${fmtPct(pr.vote_share_p10, 1)}–${fmtPct(pr.vote_share_p90, 1)})</span>`}</td>
+              <td class="num"><strong>${det ? pr.seats_median : fmtNum(pr.seats_mean, 2)}</strong></td>
+              <td class="num">${det ? pr.seats_median : `${pr.seats_p10}–${pr.seats_p90}`}</td>
+              <td class="num">${det ? `${pr.seguros} / — / —` : `${pr.seguros} / ${pr.probables} / ${pr.en_juego}`}</td>
             </tr>
           `;
         }).join("");
@@ -1746,7 +1897,7 @@
             const basePct = (boundsByPid[pid] || {}).basePct || 0;
             document.getElementById("sl-lbl-" + pid).textContent =
               `${Math.max(0.1, basePct + STATE.swings[pid]).toFixed(1)}% (${STATE.swings[pid] >= 0 ? "+" : ""}${STATE.swings[pid].toFixed(1)} pp)`;
-            updateWhatIfAndPact();
+            refreshInteractiveScenarioViews();
           });
         });
       }
@@ -1761,15 +1912,24 @@
           const cfBase = base * Number(engMult[pid] !== undefined ? engMult[pid] : 1.0);
           const delta = Number(STATE.swings[pid] || 0) / 100;
           if (Math.abs(delta) > 1e-6) movedCount += 1;
-          mult[pid] = base > 0.002 ? Math.max(0.05, (cfBase + delta) / base) : 1.0;
+          mult[pid] = base > 1e-5 ? Math.max(0.05, (cfBase + delta) / base) : 1.0;
         }
         const solved = solveShiftedChamber(mult);
         return { solved, mult, movedCount };
       }
 
-      function renderPactBuilderRows() {
+      let lastPactPartiesKey = "";
+      function getActivePactParties(solved) {
         const seatsMap = DATA.national.seats;
-        const activePactParties = DATA.party_order.filter(pid => (seatsMap[pid] && seatsMap[pid].p95 > 0) || pid === "SALF");
+        const simSeats = (solved && solved.natSeats) || {};
+        return DATA.party_order.filter(
+          pid => (seatsMap[pid] && seatsMap[pid].p95 > 0) || (simSeats[pid] || 0) > 0 || pid === "SALF"
+        );
+      }
+
+      function renderPactBuilderRows(solved = null) {
+        const activePactParties = getActivePactParties(solved);
+        lastPactPartiesKey = activePactParties.join(",");
         const box = document.getElementById("pact-builder-rows");
         box.innerHTML = activePactParties.map(pid => {
           const st = STATE.pactVotes[pid] || "no";
@@ -1812,7 +1972,7 @@
           else if (cfg.abs.includes(pid)) STATE.pactVotes[pid] = "abs";
           else STATE.pactVotes[pid] = "no";
         });
-        renderPactBuilderRows();
+        renderPactBuilderRows(computeCurrentWhatIf().solved);
         updateWhatIfAndPact();
       }
 
@@ -1824,6 +1984,10 @@
         const baseDet = (movedCount === 0 && !cf)
           ? solved
           : solveShiftedChamber(Object.fromEntries(DATA.party_order.map(p => [p, 1.0])));
+        const nextPactKey = getActivePactParties(solved).join(",");
+        if (nextPactKey !== lastPactPartiesKey) {
+          renderPactBuilderRows(solved);
+        }
 
         // Update What-If summary & table
         const modePrefix = cf ? `Modo ${STATE.engine.toUpperCase()} (${STATE.cis === "with" ? "con CIS" : "sin CIS"}) · ` : "";
@@ -2001,15 +2165,19 @@
           .filter(k => k in srcModels)
           .map(k => {
             const m = srcModels[k];
+            const c80pv = m.coverage_80_provincial_votes !== undefined ? m.coverage_80_provincial_votes : m.coverage_80_provincial_seats;
+            const c95pv = m.coverage_95_provincial_votes !== undefined ? m.coverage_95_provincial_votes : m.coverage_95_provincial_seats;
+            const c80nv = m.coverage_80_national_votes !== undefined ? m.coverage_80_national_votes : m.coverage_80_national_seats;
+            const c95nv = m.coverage_95_national_votes !== undefined ? m.coverage_95_national_votes : m.coverage_95_national_seats;
             return `
               <tr style="${k === "ensemble" ? "background:#f8f6f0;font-weight:600;" : ""}">
                 <td><strong>${labels[k] || k}</strong></td>
-                <td class="num">${Number(m.vote_mae_national).toFixed(2)} pp</td>
-                <td class="num">${Number(m.seat_mae_provincial).toFixed(3)}</td>
-                <td class="num">${Number(m.seat_mae_national).toFixed(2)}</td>
-                <td class="num">${Number(m.brier_score).toFixed(4)}</td>
-                <td class="num">${(m.coverage_80_provincial_seats * 100).toFixed(1)}% / ${(m.coverage_80_national_seats * 100).toFixed(1)}%</td>
-                <td class="num">${(m.coverage_95_provincial_seats * 100).toFixed(1)}% / ${(m.coverage_95_national_seats * 100).toFixed(1)}%</td>
+                <td class="num">${Number(m.vote_mae_provincial || 0).toFixed(2)} / ${Number(m.vote_mae_national).toFixed(2)} pp</td>
+                <td class="num">${Number(m.seat_mae_provincial).toFixed(2)} / ${Number(m.seat_mae_national).toFixed(1)}</td>
+                <td class="num">${Number(m.brier_score).toFixed(4)} / ${Number(m.log_score).toFixed(3)}</td>
+                <td class="num">${(Number(c80pv) * 100).toFixed(1)}% / ${(Number(c95pv) * 100).toFixed(1)}%</td>
+                <td class="num">${(Number(c80nv) * 100).toFixed(1)}% / ${(Number(c95nv) * 100).toFixed(1)}%</td>
+                <td class="num">${(Number(m.coverage_80_national_seats) * 100).toFixed(1)}% / ${(Number(m.coverage_95_national_seats) * 100).toFixed(1)}%</td>
               </tr>
             `;
           }).join("");
@@ -2041,16 +2209,22 @@
           `;
         }).join("");
 
-        document.querySelector("#bt-elections-table tbody").innerHTML = Object.entries(bt.per_election || {}).map(([eid, m]) => `
-          <tr>
-            <td><strong>${esc(eid)}</strong></td>
-            <td class="num">${Number(m.vote_mae_national).toFixed(2)} pp</td>
-            <td class="num">${Number(m.seat_mae_provincial).toFixed(3)}</td>
-            <td class="num">${Number(m.seat_mae_national).toFixed(2)}</td>
-            <td class="num">${Number(m.brier_score).toFixed(4)}</td>
-            <td class="num">${(m.coverage_80_provincial_seats * 100).toFixed(1)}% / ${(m.coverage_95_provincial_seats * 100).toFixed(1)}%</td>
-          </tr>
-        `).join("");
+        document.querySelector("#bt-elections-table tbody").innerHTML = Object.entries(bt.per_election || {}).map(([eid, m]) => {
+          const c80pv = m.coverage_80_provincial_votes !== undefined ? m.coverage_80_provincial_votes : m.coverage_80_provincial_seats;
+          const c95pv = m.coverage_95_provincial_votes !== undefined ? m.coverage_95_provincial_votes : m.coverage_95_provincial_seats;
+          const c80ns = m.coverage_80_national_seats !== undefined ? m.coverage_80_national_seats : m.coverage_80_provincial_seats;
+          const c95ns = m.coverage_95_national_seats !== undefined ? m.coverage_95_national_seats : m.coverage_95_provincial_seats;
+          return `
+            <tr>
+              <td><strong>${esc(eid)}</strong></td>
+              <td class="num">${Number(m.vote_mae_provincial || 0).toFixed(2)} / ${Number(m.vote_mae_national).toFixed(2)} pp</td>
+              <td class="num">${Number(m.seat_mae_provincial).toFixed(2)} / ${Number(m.seat_mae_national).toFixed(1)}</td>
+              <td class="num">${Number(m.brier_score).toFixed(4)}</td>
+              <td class="num">${(Number(c80pv) * 100).toFixed(1)}% / ${(Number(c95pv) * 100).toFixed(1)}%</td>
+              <td class="num">${(Number(c80ns) * 100).toFixed(1)}% / ${(Number(c95ns) * 100).toFixed(1)}%</td>
+            </tr>
+          `;
+        }).join("");
       }
 
       // EVENT WIRING
@@ -2059,13 +2233,20 @@
         document.querySelectorAll("#cis-toggle .seg-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-cis") === STATE.cis));
       }
 
+      function refreshInteractiveScenarioViews() {
+        updateWhatIfAndPact();
+        renderCartogram();
+        renderBattlegrounds();
+        renderDistrictInspector();
+      }
+
       document.querySelectorAll("#engine-toggle .seg-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           STATE.engine = btn.getAttribute("data-engine");
           syncModeButtons();
           renderHemicycleAndNational();
           renderWhatIfSliders();
-          updateWhatIfAndPact();
+          refreshInteractiveScenarioViews();
         });
       });
 
@@ -2075,7 +2256,7 @@
           syncModeButtons();
           renderHemicycleAndNational();
           renderWhatIfSliders();
-          updateWhatIfAndPact();
+          refreshInteractiveScenarioViews();
         });
       });
 
@@ -2085,7 +2266,7 @@
         syncModeButtons();
         renderHemicycleAndNational();
         renderWhatIfSliders();
-        updateWhatIfAndPact();
+        refreshInteractiveScenarioViews();
       });
 
       document.querySelectorAll("#map-mode-toggle .seg-btn").forEach(btn => {
@@ -2099,7 +2280,7 @@
       document.getElementById("btn-reset-sliders").addEventListener("click", () => {
         SLIDER_PARTIES.forEach(p => { STATE.swings[p] = 0.0; });
         renderWhatIfSliders();
-        updateWhatIfAndPact();
+        refreshInteractiveScenarioViews();
       });
 
       document.querySelectorAll("#pact-presets button").forEach(btn => {

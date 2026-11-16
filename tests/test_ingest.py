@@ -278,3 +278,21 @@ def test_cli_fetch_offline_and_blackout_guard() -> None:
     )
     assert res_offline.exit_code == 0
     assert "29-N Data Ingestion Summary" in res_offline.stdout
+
+
+def test_benchmark_pollsters_excluded_and_aragon_cha_preserved() -> None:
+    from elecciones.models.pollster_ratings import is_benchmark_or_excluded_pollster
+
+    polls_dir = get_polls_dir()
+    for fname in ("national_2015_2023.csv", "national_2026.csv"):
+        polls = load_national_polls(polls_dir / fname)
+        assert not [p.pollster for p in polls if is_benchmark_or_excluded_pollster(p.pollster)]
+
+    reg = load_regional_polls(polls_dir / "regional_2026.csv")
+    assert not [r.pollster for r in reg if is_benchmark_or_excluded_pollster(r.pollster)]
+    assert any(r.scope_code == "02" and "CHA" in r.party_shares for r in reg)
+    assert not any(
+        any(tok in r.pollster.lower() for tok in ("general elections", "autonomous election"))
+        for r in reg
+    )
+

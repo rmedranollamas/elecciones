@@ -303,23 +303,38 @@ def compute_non_cis_national_consensus(
     half_life_days: float = 12.0,
 ) -> dict[str, float]:
     """Compute a clean non-CIS consensus across polled parties on ``national_2026.csv``."""
+    from elecciones.models.kernel_aggregator import compute_wave_overlap_penalties
+    from elecciones.models.pollster_ratings import (
+        _PARTISAN_INTERNAL_POLLSTERS,
+        is_benchmark_or_excluded_pollster,
+    )
+
     eligible = [
         p
         for p in polls
         if not p.is_cis
+        and not is_benchmark_or_excluded_pollster(p.pollster)
         and p.fieldwork_end <= as_of
         and (as_of - p.fieldwork_end).days <= window_days
     ]
     if not eligible:
-        eligible = [p for p in polls if not p.is_cis and p.fieldwork_end <= as_of]
+        eligible = [
+            p
+            for p in polls
+            if not p.is_cis
+            and not is_benchmark_or_excluded_pollster(p.pollster)
+            and p.fieldwork_end <= as_of
+        ]
 
+    overlap_u = compute_wave_overlap_penalties(eligible) if eligible else np.zeros(0)
     sums: dict[str, float] = {}
     weights: dict[str, float] = {}
-    for poll in eligible:
+    for idx, poll in enumerate(eligible):
         age = max(0, (as_of - poll.fieldwork_end).days)
         recency = 0.5 ** (age / half_life_days)
         n_eff = float(min(poll.sample_size or 1000, 4000)) ** 0.5
-        wt = recency * (n_eff / 31.6227766)
+        partisan_factor = 0.15 if poll.pollster in _PARTISAN_INTERNAL_POLLSTERS else 1.0
+        wt = recency * (n_eff / 31.6227766) * float(overlap_u[idx]) * partisan_factor
         for pid, val in poll.party_shares.items():
             if pid == "FA_FV":
                 continue

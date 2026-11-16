@@ -639,7 +639,12 @@ def rake_provincial_ipf(
 
     # Active marginal columns to enforce via IPF
     if tracked_indices is not None:
-        all_target_cols = [j for j in range(n_p) if target_vec[j] > 0.0 and nat_prior[j] > 0.0]
+        t_set = set(tracked_indices)
+        all_target_cols = [
+            j
+            for j in range(n_p)
+            if j in t_set and target_vec[j] > 0.0 and nat_prior[j] > 0.0
+        ]
     else:
         all_target_cols = [j for j in range(n_p) if target_vec[j] > 0.0 and nat_prior[j] > 0.0]
 
@@ -682,6 +687,8 @@ def _canon_regional_poll_party(
         return {"COMPROMIS_FV": 1.0}
     if party in {"NC", "UPC"} and codauto == "05" and mask_map.get("UPC", 0) == 1:
         return {"UPC": 1.0}
+    if codauto == "02" and party == "CHA" and not has_explicit_fa and mask_map.get("FA", 0) == 1:
+        return {"FA": 1.0}
     if party == "SUMAR":
         if codauto == "10" and not has_explicit_fv and mask_map.get("COMPROMIS_FV", 0) == 1:
             return {"COMPROMIS_FV": 0.90}
@@ -694,6 +701,8 @@ def _canon_regional_poll_party(
             if not has_explicit_adelante and mask_map.get("ADELANTE", 0) == 1:
                 out_a["ADELANTE"] = 0.25
             return out_a
+        if codauto == "09" and not has_explicit_fa and mask_map.get("FA", 0) == 1:
+            return {"FA": 0.95}
         if not has_explicit_fa and mask_map.get("FA", 0) == 1:
             return {"FA": 0.82}
         return {}
@@ -725,11 +734,11 @@ def shrink_provinces_with_cis_and_regional_polls(
     by_codauto = constituencies.by_codauto()
 
     n0 = float(hyperparams.stage2_prior_weight)
-    cis_weights = np.zeros(n_c, dtype=np.float64)
-    reg_weights = np.zeros(n_c, dtype=np.float64)
+    cis_w_num = np.zeros(n_c, dtype=np.float64)
+    reg_w_num = np.zeros(n_c, dtype=np.float64)
     cur = pre_matrix.copy()
 
-    # Track marginal precision N_eff per district after CIS blending
+    # Track marginal precision N_eff per district after CIS/regional blending
     eff_n_c = np.full(n_c, n0, dtype=np.float64)
     did_shrink = False
 
@@ -751,7 +760,7 @@ def shrink_provinces_with_cis_and_regional_polls(
             cis_vec = _exact_normalize_row(cis_vec, active_mask[i], float(blank_vec[i]))
             cur[i] = (n0 * cur[i] + w_cis * cis_vec) / (n0 + w_cis)
             cur[i] = _exact_normalize_row(cur[i], active_mask[i], float(blank_vec[i]))
-            cis_weights[i] = w_cis / (n0 + w_cis)
+            cis_w_num[i] = w_cis
             eff_n_c[i] += w_cis
             did_shrink = True
 
@@ -810,9 +819,10 @@ def shrink_provinces_with_cis_and_regional_polls(
                 has_fv = "COMPROMIS_FV" in rp.party_shares
                 has_ad = "ADELANTE" in rp.party_shares
                 has_upc = "UPC" in rp.party_shares
-                # Aggregate mapped columns within the same poll before adding weight to denominator
-                # so split lists mapping to one coalition (e.g. Navarre PP+UPN -> UPN_PP)
-                # sum cleanly.
+                # Aggregate mapped columns within the same poll before adding weight to
+                # denominator so split lists (e.g. Navarre PP+UPN -> UPN_PP) sum cleanly;
+                # skip polls with large unproclaimed push-poll parties (e.g. Madrid IE > 6%).
+                max_unmapped_non_party = 0.0
                 rp_mapped: dict[str, float] = defaultdict(float)
                 for raw_p, val in rp.party_shares.items():
                     mapped = _canon_regional_poll_party(
@@ -824,8 +834,12 @@ def shrink_provinces_with_cis_and_regional_polls(
                         has_explicit_adelante=has_ad,
                         has_explicit_upc=has_upc,
                     )
+                    if not mapped and raw_p not in p_idx and val > max_unmapped_non_party:
+                        max_unmapped_non_party = val
                     for canon_p, factor in mapped.items():
                         rp_mapped[canon_p] += val * factor
+                if max_unmapped_non_party > 0.06:
+                    continue
                 for canon_p, mapped_val in rp_mapped.items():
                     party_num[canon_p] += w * mapped_val
                     party_den[canon_p] += w
@@ -856,6 +870,7 @@ def shrink_provinces_with_cis_and_regional_polls(
             n_cur_ccaa = float(np.mean(eff_n_c[member_idx]))
 
             max_w_ccaa = max(party_den.values())
+            w_eff_ccaa = min(max_w_ccaa, 0.45 * n_cur_ccaa)
             for canon_p, w_tot in party_den.items():
                 j = p_idx.get(canon_p)
                 if j is None or ccaa_cur_mean[j] <= 1e-6:
@@ -871,7 +886,8 @@ def shrink_provinces_with_cis_and_regional_polls(
                         cur[ci, j] *= ratio
             for ci in member_idx:
                 cur[ci] = _exact_normalize_row(cur[ci], active_mask[ci], float(blank_vec[ci]))
-                reg_weights[ci] += max_w_ccaa / (n_cur_ccaa + max_w_ccaa)
+                reg_w_num[ci] += w_eff_ccaa
+                eff_n_c[ci] += w_eff_ccaa
 
         # Direct provincial polls
         for (st, sc), plist in sorted(scope_groups.items()):
@@ -888,6 +904,7 @@ def shrink_provinces_with_cis_and_regional_polls(
             did_shrink = True
             n_cur_p = eff_n_c[ci]
             max_w_prov = max(party_den.values())
+            w_eff_prov = min(max_w_prov, 0.40 * n_cur_p)
             for canon_p, w_tot in party_den.items():
                 j = p_idx.get(canon_p)
                 if j is None or not active_mask[ci, j]:
@@ -896,7 +913,12 @@ def shrink_provinces_with_cis_and_regional_polls(
                 w_eff = min(w_tot, 0.40 * n_cur_p)
                 cur[ci, j] = (n_cur_p * cur[ci, j] + w_eff * y_poll) / (n_cur_p + w_eff)
             cur[ci] = _exact_normalize_row(cur[ci], active_mask[ci], float(blank_vec[ci]))
-            reg_weights[ci] += max_w_prov / (n_cur_p + max_w_prov)
+            reg_w_num[ci] += w_eff_prov
+            eff_n_c[ci] += w_eff_prov
+
+    denom = n0 + cis_w_num + reg_w_num
+    cis_weights = cis_w_num / denom
+    reg_weights = reg_w_num / denom
 
     # Step 3C: Re-anchor nationwide parties onto Stage 1 national marginals via masked IPF so
     # local empirical-Bayes updates shape intra-party geography without introducing national drift
@@ -1012,7 +1034,7 @@ def project_2026_provinces(
     eff_blank_nat = float(turnout_weights @ blank_vec)
     prior_mat = _exact_normalize_matrix(prior_mat, active_mask, blank_vec)
 
-    target_nat_dict, tracked_idx = build_ipf_national_targets(
+    target_nat_dict, _ = build_ipf_national_targets(
         party_ids,
         prior_mat,
         turnout_weights,
@@ -1028,7 +1050,7 @@ def project_2026_provinces(
         blank_vec,
         turnout_weights,
         target_vec,
-        tracked_indices=tracked_idx,
+        tracked_indices=None,
         n_iters=hyperparams.stage2_ipf_iters,
     )
 
@@ -1262,7 +1284,7 @@ def project_historical_provinces(
         blank_vec,
         turnout_weights,
         target_vec,
-        tracked_indices=tracked_idx,
+        tracked_indices=None,
         n_iters=hyperparams.stage2_ipf_iters,
     )
     final_mat = pre_mat.copy()
