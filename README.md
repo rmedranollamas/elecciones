@@ -70,9 +70,17 @@ uv run elecciones dashboard                        # Compilar docs/index.html au
 uv run elecciones allocate -i distrito.json --json # Reparto LOREG Art. 163 ad-hoc
 ```
 
-### Añadir o corregir encuestas manualmente
+### Añadir, corregir o excluir encuestas manualmente
 
-Edita [`data/polls/manual_polls_2026.csv`](data/polls/manual_polls_2026.csv) con filas `action=add` o `action=override` para incorporar sondeos nuevos o corregir erratas antes de ejecutar `elecciones forecast` o `elecciones run-all --offline`.
+Edita [`data/polls/manual_polls_2026.csv`](data/polls/manual_polls_2026.csv) (o pasa `--manual-polls /ruta/overlay.csv` a `elecciones forecast`) con filas `action=add`, `action=override` o `action=exclude` para incorporar sondeos nuevos, corregir erratas o descartar olas concretas antes de simular.
+
+### Experimentación, sensibilidad y barridos de parámetros
+
+Consulta la guía completa en **[`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md)** para ejecutar experimentos aislados sin sobrescribir `data/outputs/` ni `docs/index.html`:
+- Aislamiento de salidas (`-o /tmp/...`) y *sandboxes* completos con `ELECCIONES_REPO_ROOT`.
+- Ablaciones de motor (`--engine ensemble|kernel|state_space`), exclusión de CIS (`--exclude-cis-headline`) y *replays* históricos en el tiempo (`--as-of YYYY-MM-DD`).
+- Superposición de sondeos hipotéticos (`--manual-polls`) y horizontes personalizados en LOOCV (`elecciones backtest --horizons ...`).
+- Barridos programáticos en Python sobre colas Student-$t$ (`HierarchicalCovarianceConfig`), hiperparámetros de Etapas 1–2 (`ModelHyperparameters`), matrices de transferencia de coaliciones (`coalition_transfers.json`) y pactos de investidura Art. 99 personalizados.
 
 ---
 
