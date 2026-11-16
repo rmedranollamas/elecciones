@@ -1,0 +1,1164 @@
+{
+  "chamber": "congress",
+  "election_date": "2026-11-29",
+  "boe_source": "BOE-A-2026-20742",
+  "total_seats": 350,
+  "total_senate_direct_seats": 208,
+  "constituencies": [
+    {
+      "cpro": "01",
+      "name": "Araba/Álava",
+      "short_name": "Álava",
+      "codauto": "16",
+      "ccaa_name": "País Vasco",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 1,
+      "cartogram_col": 5,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 260214,
+      "validos_2023": 169107
+    },
+    {
+      "cpro": "02",
+      "name": "Albacete",
+      "short_name": "Albacete",
+      "codauto": "08",
+      "ccaa_name": "Castilla-La Mancha",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 5,
+      "cartogram_col": 5,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 307988,
+      "validos_2023": 221191
+    },
+    {
+      "cpro": "03",
+      "name": "Alicante/Alacant",
+      "short_name": "Alicante",
+      "codauto": "10",
+      "ccaa_name": "Comunitat Valenciana",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 12,
+      "seats_2023": 12,
+      "seats_2026": 12,
+      "cartogram_row": 5,
+      "cartogram_col": 7,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 1306311,
+      "validos_2023": 899192
+    },
+    {
+      "cpro": "04",
+      "name": "Almería",
+      "short_name": "Almería",
+      "codauto": "01",
+      "ccaa_name": "Andalucía",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 6,
+      "seats_2023": 6,
+      "seats_2026": 6,
+      "cartogram_row": 7,
+      "cartogram_col": 6,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 516114,
+      "validos_2023": 321242
+    },
+    {
+      "cpro": "05",
+      "name": "Ávila",
+      "short_name": "Ávila",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 3,
+      "seats_2023": 3,
+      "seats_2026": 3,
+      "cartogram_row": 3,
+      "cartogram_col": 3,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 136669,
+      "validos_2023": 97956
+    },
+    {
+      "cpro": "06",
+      "name": "Badajoz",
+      "short_name": "Badajoz",
+      "codauto": "11",
+      "ccaa_name": "Extremadura",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 6,
+      "seats_2023": 5,
+      "seats_2026": 5,
+      "cartogram_row": 5,
+      "cartogram_col": 2,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 550702,
+      "validos_2023": 391461
+    },
+    {
+      "cpro": "07",
+      "name": "Illes Balears",
+      "short_name": "Illes Balears",
+      "codauto": "04",
+      "ccaa_name": "Illes Balears",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 8,
+      "seats_2023": 8,
+      "seats_2026": 8,
+      "cartogram_row": 3,
+      "cartogram_col": 9,
+      "senate": {
+        "direct_seats": 5,
+        "max_votes_per_ballot": 2,
+        "subdistricts": [
+          {
+            "id": "07-MALLORCA",
+            "name": "Mallorca",
+            "direct_seats": 3,
+            "max_votes_per_ballot": 2
+          },
+          {
+            "id": "07-MENORCA",
+            "name": "Menorca",
+            "direct_seats": 1,
+            "max_votes_per_ballot": 1
+          },
+          {
+            "id": "07-IBIZA_FORMENTERA",
+            "name": "Ibiza-Formentera",
+            "direct_seats": 1,
+            "max_votes_per_ballot": 1
+          }
+        ]
+      },
+      "censo_2023": 828755,
+      "validos_2023": 503280
+    },
+    {
+      "cpro": "08",
+      "name": "Barcelona",
+      "short_name": "Barcelona",
+      "codauto": "09",
+      "ccaa_name": "Cataluña",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 32,
+      "seats_2023": 32,
+      "seats_2026": 32,
+      "cartogram_row": 1,
+      "cartogram_col": 9,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 4243500,
+      "validos_2023": 2667478
+    },
+    {
+      "cpro": "09",
+      "name": "Burgos",
+      "short_name": "Burgos",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 1,
+      "cartogram_col": 4,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 296401,
+      "validos_2023": 202569
+    },
+    {
+      "cpro": "10",
+      "name": "Cáceres",
+      "short_name": "Cáceres",
+      "codauto": "11",
+      "ccaa_name": "Extremadura",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 4,
+      "cartogram_col": 2,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 339491,
+      "validos_2023": 235851
+    },
+    {
+      "cpro": "11",
+      "name": "Cádiz",
+      "short_name": "Cádiz",
+      "codauto": "01",
+      "ccaa_name": "Andalucía",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 9,
+      "seats_2023": 9,
+      "seats_2026": 8,
+      "cartogram_row": 7,
+      "cartogram_col": 3,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 1017958,
+      "validos_2023": 637098
+    },
+    {
+      "cpro": "12",
+      "name": "Castellón/Castelló",
+      "short_name": "Castellón",
+      "codauto": "10",
+      "ccaa_name": "Comunitat Valenciana",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 5,
+      "seats_2023": 5,
+      "seats_2026": 5,
+      "cartogram_row": 3,
+      "cartogram_col": 7,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 430830,
+      "validos_2023": 307930
+    },
+    {
+      "cpro": "13",
+      "name": "Ciudad Real",
+      "short_name": "C. Real",
+      "codauto": "08",
+      "ccaa_name": "Castilla-La Mancha",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 5,
+      "seats_2023": 5,
+      "seats_2026": 5,
+      "cartogram_row": 5,
+      "cartogram_col": 4,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 391495,
+      "validos_2023": 282979
+    },
+    {
+      "cpro": "14",
+      "name": "Córdoba",
+      "short_name": "Córdoba",
+      "codauto": "01",
+      "ccaa_name": "Andalucía",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 6,
+      "seats_2023": 6,
+      "seats_2026": 6,
+      "cartogram_row": 6,
+      "cartogram_col": 4,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 645288,
+      "validos_2023": 448602
+    },
+    {
+      "cpro": "15",
+      "name": "A Coruña",
+      "short_name": "A Coruña",
+      "codauto": "12",
+      "ccaa_name": "Galicia",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 8,
+      "seats_2023": 8,
+      "seats_2026": 8,
+      "cartogram_row": 0,
+      "cartogram_col": 0,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 1085673,
+      "validos_2023": 677702
+    },
+    {
+      "cpro": "16",
+      "name": "Cuenca",
+      "short_name": "Cuenca",
+      "codauto": "08",
+      "ccaa_name": "Castilla-La Mancha",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 3,
+      "seats_2023": 3,
+      "seats_2026": 3,
+      "cartogram_row": 4,
+      "cartogram_col": 5,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 152694,
+      "validos_2023": 113808
+    },
+    {
+      "cpro": "17",
+      "name": "Girona",
+      "short_name": "Girona",
+      "codauto": "09",
+      "ccaa_name": "Cataluña",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 6,
+      "seats_2023": 6,
+      "seats_2026": 6,
+      "cartogram_row": 0,
+      "cartogram_col": 9,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 546370,
+      "validos_2023": 322988
+    },
+    {
+      "cpro": "18",
+      "name": "Granada",
+      "short_name": "Granada",
+      "codauto": "01",
+      "ccaa_name": "Andalucía",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 7,
+      "seats_2023": 7,
+      "seats_2026": 7,
+      "cartogram_row": 7,
+      "cartogram_col": 5,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 765478,
+      "validos_2023": 502845
+    },
+    {
+      "cpro": "19",
+      "name": "Guadalajara",
+      "short_name": "Guadalajara",
+      "codauto": "08",
+      "ccaa_name": "Castilla-La Mancha",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 3,
+      "seats_2023": 3,
+      "seats_2026": 3,
+      "cartogram_row": 3,
+      "cartogram_col": 5,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 196983,
+      "validos_2023": 140913
+    },
+    {
+      "cpro": "20",
+      "name": "Gipuzkoa",
+      "short_name": "Gipuzkoa",
+      "codauto": "16",
+      "ccaa_name": "País Vasco",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 6,
+      "seats_2023": 6,
+      "seats_2026": 6,
+      "cartogram_row": 0,
+      "cartogram_col": 5,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 585873,
+      "validos_2023": 376621
+    },
+    {
+      "cpro": "21",
+      "name": "Huelva",
+      "short_name": "Huelva",
+      "codauto": "01",
+      "ccaa_name": "Andalucía",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 5,
+      "seats_2023": 5,
+      "seats_2026": 5,
+      "cartogram_row": 6,
+      "cartogram_col": 2,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 402504,
+      "validos_2023": 256804
+    },
+    {
+      "cpro": "22",
+      "name": "Huesca",
+      "short_name": "Huesca",
+      "codauto": "02",
+      "ccaa_name": "Aragón",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 3,
+      "seats_2023": 3,
+      "seats_2026": 3,
+      "cartogram_row": 0,
+      "cartogram_col": 7,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 173391,
+      "validos_2023": 119895
+    },
+    {
+      "cpro": "23",
+      "name": "Jaén",
+      "short_name": "Jaén",
+      "codauto": "01",
+      "ccaa_name": "Andalucía",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 5,
+      "seats_2023": 5,
+      "seats_2026": 5,
+      "cartogram_row": 6,
+      "cartogram_col": 5,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 518371,
+      "validos_2023": 368731
+    },
+    {
+      "cpro": "24",
+      "name": "León",
+      "short_name": "León",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 1,
+      "cartogram_col": 2,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 422917,
+      "validos_2023": 275240
+    },
+    {
+      "cpro": "25",
+      "name": "Lleida",
+      "short_name": "Lleida",
+      "codauto": "09",
+      "ccaa_name": "Cataluña",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 1,
+      "cartogram_col": 8,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 317225,
+      "validos_2023": 184539
+    },
+    {
+      "cpro": "26",
+      "name": "La Rioja",
+      "short_name": "La Rioja",
+      "codauto": "17",
+      "ccaa_name": "La Rioja",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 1,
+      "cartogram_col": 6,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 252091,
+      "validos_2023": 174663
+    },
+    {
+      "cpro": "27",
+      "name": "Lugo",
+      "short_name": "Lugo",
+      "codauto": "12",
+      "ccaa_name": "Galicia",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 0,
+      "cartogram_col": 1,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 337755,
+      "validos_2023": 198566
+    },
+    {
+      "cpro": "28",
+      "name": "Madrid",
+      "short_name": "Madrid",
+      "codauto": "13",
+      "ccaa_name": "Comunidad de Madrid",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 37,
+      "seats_2023": 37,
+      "seats_2026": 38,
+      "cartogram_row": 3,
+      "cartogram_col": 4,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 5224561,
+      "validos_2023": 3608673
+    },
+    {
+      "cpro": "29",
+      "name": "Málaga",
+      "short_name": "Málaga",
+      "codauto": "01",
+      "ccaa_name": "Andalucía",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 11,
+      "seats_2023": 11,
+      "seats_2026": 11,
+      "cartogram_row": 7,
+      "cartogram_col": 4,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 1239846,
+      "validos_2023": 788338
+    },
+    {
+      "cpro": "30",
+      "name": "Murcia",
+      "short_name": "Murcia",
+      "codauto": "14",
+      "ccaa_name": "Región de Murcia",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 10,
+      "seats_2023": 10,
+      "seats_2026": 10,
+      "cartogram_row": 6,
+      "cartogram_col": 6,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 1099703,
+      "validos_2023": 747797
+    },
+    {
+      "cpro": "31",
+      "name": "Navarra",
+      "short_name": "Navarra",
+      "codauto": "15",
+      "ccaa_name": "Comunidad Foral de Navarra",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 5,
+      "seats_2023": 5,
+      "seats_2026": 5,
+      "cartogram_row": 0,
+      "cartogram_col": 6,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 519918,
+      "validos_2023": 341844
+    },
+    {
+      "cpro": "32",
+      "name": "Ourense",
+      "short_name": "Ourense",
+      "codauto": "12",
+      "ccaa_name": "Galicia",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 1,
+      "cartogram_col": 1,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 355765,
+      "validos_2023": 186271
+    },
+    {
+      "cpro": "33",
+      "name": "Asturias",
+      "short_name": "Asturias",
+      "codauto": "03",
+      "ccaa_name": "Principado de Asturias",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 7,
+      "seats_2023": 7,
+      "seats_2026": 7,
+      "cartogram_row": 0,
+      "cartogram_col": 2,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 959023,
+      "validos_2023": 597032
+    },
+    {
+      "cpro": "34",
+      "name": "Palencia",
+      "short_name": "Palencia",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 3,
+      "seats_2023": 3,
+      "seats_2026": 3,
+      "cartogram_row": 1,
+      "cartogram_col": 3,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 137642,
+      "validos_2023": 96962
+    },
+    {
+      "cpro": "35",
+      "name": "Las Palmas",
+      "short_name": "Las Palmas",
+      "codauto": "05",
+      "ccaa_name": "Canarias",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 8,
+      "seats_2023": 8,
+      "seats_2026": 8,
+      "cartogram_row": 8,
+      "cartogram_col": 1,
+      "senate": {
+        "direct_seats": 5,
+        "max_votes_per_ballot": 2,
+        "subdistricts": [
+          {
+            "id": "35-GRAN_CANARIA",
+            "name": "Gran Canaria",
+            "direct_seats": 3,
+            "max_votes_per_ballot": 2
+          },
+          {
+            "id": "35-FUERTEVENTURA",
+            "name": "Fuerteventura",
+            "direct_seats": 1,
+            "max_votes_per_ballot": 1
+          },
+          {
+            "id": "35-LANZAROTE",
+            "name": "Lanzarote",
+            "direct_seats": 1,
+            "max_votes_per_ballot": 1
+          }
+        ]
+      },
+      "censo_2023": 898882,
+      "validos_2023": 529337
+    },
+    {
+      "cpro": "36",
+      "name": "Pontevedra",
+      "short_name": "Pontevedra",
+      "codauto": "12",
+      "ccaa_name": "Galicia",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 7,
+      "seats_2023": 7,
+      "seats_2026": 7,
+      "cartogram_row": 1,
+      "cartogram_col": 0,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 909434,
+      "validos_2023": 573124
+    },
+    {
+      "cpro": "37",
+      "name": "Salamanca",
+      "short_name": "Salamanca",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 4,
+      "seats_2023": 4,
+      "seats_2026": 4,
+      "cartogram_row": 3,
+      "cartogram_col": 2,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 300506,
+      "validos_2023": 199110
+    },
+    {
+      "cpro": "38",
+      "name": "Santa Cruz de Tenerife",
+      "short_name": "S. C. Tenerife",
+      "codauto": "05",
+      "ccaa_name": "Canarias",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 7,
+      "seats_2023": 7,
+      "seats_2026": 7,
+      "cartogram_row": 8,
+      "cartogram_col": 0,
+      "senate": {
+        "direct_seats": 6,
+        "max_votes_per_ballot": 2,
+        "subdistricts": [
+          {
+            "id": "38-TENERIFE",
+            "name": "Tenerife",
+            "direct_seats": 3,
+            "max_votes_per_ballot": 2
+          },
+          {
+            "id": "38-LA_PALMA",
+            "name": "La Palma",
+            "direct_seats": 1,
+            "max_votes_per_ballot": 1
+          },
+          {
+            "id": "38-LA_GOMERA",
+            "name": "La Gomera",
+            "direct_seats": 1,
+            "max_votes_per_ballot": 1
+          },
+          {
+            "id": "38-EL_HIERRO",
+            "name": "El Hierro",
+            "direct_seats": 1,
+            "max_votes_per_ballot": 1
+          }
+        ]
+      },
+      "censo_2023": 881217,
+      "validos_2023": 494373
+    },
+    {
+      "cpro": "39",
+      "name": "Cantabria",
+      "short_name": "Cantabria",
+      "codauto": "06",
+      "ccaa_name": "Cantabria",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 5,
+      "seats_2023": 5,
+      "seats_2026": 5,
+      "cartogram_row": 0,
+      "cartogram_col": 3,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 507818,
+      "validos_2023": 350150
+    },
+    {
+      "cpro": "40",
+      "name": "Segovia",
+      "short_name": "Segovia",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 3,
+      "seats_2023": 3,
+      "seats_2026": 3,
+      "cartogram_row": 2,
+      "cartogram_col": 4,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 119454,
+      "validos_2023": 88613
+    },
+    {
+      "cpro": "41",
+      "name": "Sevilla",
+      "short_name": "Sevilla",
+      "codauto": "01",
+      "ccaa_name": "Andalucía",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 12,
+      "seats_2023": 12,
+      "seats_2026": 12,
+      "cartogram_row": 6,
+      "cartogram_col": 3,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 1564082,
+      "validos_2023": 1059358
+    },
+    {
+      "cpro": "42",
+      "name": "Soria",
+      "short_name": "Soria",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 2,
+      "seats_2023": 2,
+      "seats_2026": 2,
+      "cartogram_row": 2,
+      "cartogram_col": 5,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 75768,
+      "validos_2023": 50769
+    },
+    {
+      "cpro": "43",
+      "name": "Tarragona",
+      "short_name": "Tarragona",
+      "codauto": "09",
+      "ccaa_name": "Cataluña",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 6,
+      "seats_2023": 6,
+      "seats_2026": 6,
+      "cartogram_row": 2,
+      "cartogram_col": 8,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 596689,
+      "validos_2023": 368024
+    },
+    {
+      "cpro": "44",
+      "name": "Teruel",
+      "short_name": "Teruel",
+      "codauto": "02",
+      "ccaa_name": "Aragón",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 3,
+      "seats_2023": 3,
+      "seats_2026": 3,
+      "cartogram_row": 2,
+      "cartogram_col": 7,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 106352,
+      "validos_2023": 75913
+    },
+    {
+      "cpro": "45",
+      "name": "Toledo",
+      "short_name": "Toledo",
+      "codauto": "08",
+      "ccaa_name": "Castilla-La Mancha",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 6,
+      "seats_2023": 6,
+      "seats_2026": 6,
+      "cartogram_row": 4,
+      "cartogram_col": 4,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 542567,
+      "validos_2023": 387200
+    },
+    {
+      "cpro": "46",
+      "name": "Valencia/València",
+      "short_name": "Valencia",
+      "codauto": "10",
+      "ccaa_name": "Comunitat Valenciana",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 15,
+      "seats_2023": 16,
+      "seats_2026": 16,
+      "cartogram_row": 4,
+      "cartogram_col": 7,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 1999340,
+      "validos_2023": 1437161
+    },
+    {
+      "cpro": "47",
+      "name": "Valladolid",
+      "short_name": "Valladolid",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 5,
+      "seats_2023": 5,
+      "seats_2026": 5,
+      "cartogram_row": 2,
+      "cartogram_col": 3,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 431381,
+      "validos_2023": 316309
+    },
+    {
+      "cpro": "48",
+      "name": "Bizkaia",
+      "short_name": "Bizkaia",
+      "codauto": "16",
+      "ccaa_name": "País Vasco",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 8,
+      "seats_2023": 8,
+      "seats_2026": 8,
+      "cartogram_row": 0,
+      "cartogram_col": 4,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 942983,
+      "validos_2023": 609693
+    },
+    {
+      "cpro": "49",
+      "name": "Zamora",
+      "short_name": "Zamora",
+      "codauto": "07",
+      "ccaa_name": "Castilla y León",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 3,
+      "seats_2023": 3,
+      "seats_2026": 3,
+      "cartogram_row": 2,
+      "cartogram_col": 2,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 162998,
+      "validos_2023": 103410
+    },
+    {
+      "cpro": "50",
+      "name": "Zaragoza",
+      "short_name": "Zaragoza",
+      "codauto": "02",
+      "ccaa_name": "Aragón",
+      "district_type": "province",
+      "threshold": 0.03,
+      "seats_2019": 7,
+      "seats_2023": 7,
+      "seats_2026": 7,
+      "cartogram_row": 1,
+      "cartogram_col": 7,
+      "senate": {
+        "direct_seats": 4,
+        "max_votes_per_ballot": 3,
+        "subdistricts": []
+      },
+      "censo_2023": 740060,
+      "validos_2023": 518705
+    },
+    {
+      "cpro": "51",
+      "name": "Ceuta",
+      "short_name": "Ceuta",
+      "codauto": "18",
+      "ccaa_name": "Ceuta",
+      "district_type": "autonomous_city",
+      "threshold": 0.0,
+      "seats_2019": 1,
+      "seats_2023": 1,
+      "seats_2026": 1,
+      "cartogram_row": 8,
+      "cartogram_col": 7,
+      "senate": {
+        "direct_seats": 2,
+        "max_votes_per_ballot": 2,
+        "subdistricts": []
+      },
+      "censo_2023": 63310,
+      "validos_2023": 33321
+    },
+    {
+      "cpro": "52",
+      "name": "Melilla",
+      "short_name": "Melilla",
+      "codauto": "19",
+      "ccaa_name": "Melilla",
+      "district_type": "autonomous_city",
+      "threshold": 0.0,
+      "seats_2019": 1,
+      "seats_2023": 1,
+      "seats_2026": 1,
+      "cartogram_row": 8,
+      "cartogram_col": 8,
+      "senate": {
+        "direct_seats": 2,
+        "max_votes_per_ballot": 2,
+        "subdistricts": []
+      },
+      "censo_2023": 61118,
+      "validos_2023": 27349
+    }
+  ]
+}

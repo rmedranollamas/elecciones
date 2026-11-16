@@ -155,12 +155,36 @@ def is_in_blackout_window(now: str | datetime | None = None) -> bool:
 
 
 def make_http_client(timeout: float = 30.0) -> httpx.Client:
-    """Create a configured ``httpx.Client`` respecting environment proxies."""
+    """Create a configured ``httpx.Client`` honoring proxy and CA env settings."""
+    import ssl
+
     import httpx
+
+    ca_bundle = os.environ.get("SSL_CERT_FILE") or os.environ.get("REQUESTS_CA_BUNDLE")
+    ssl_ctx: ssl.SSLContext | bool = (
+        ssl.create_default_context(cafile=ca_bundle)
+        if ca_bundle and Path(ca_bundle).is_file()
+        else True
+    )
+    http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
+    https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+
+    mounts: dict[str, httpx.BaseTransport] = {}
+    if http_proxy:
+        mounts["http://"] = httpx.HTTPTransport(proxy=http_proxy, verify=ssl_ctx)
+    if https_proxy:
+        mounts["https://"] = httpx.HTTPTransport(proxy=https_proxy, verify=ssl_ctx)
+    # Bypass proxy for loopback addresses cleanly (avoids httpx NO_PROXY='[::1]' URL parse crash).
+    for host in ("localhost", "127.0.0.1"):
+        mounts[f"http://{host}"] = httpx.HTTPTransport()
+        mounts[f"https://{host}"] = httpx.HTTPTransport(verify=ssl_ctx)
 
     return httpx.Client(
         timeout=timeout,
         follow_redirects=True,
+        verify=ssl_ctx,
+        mounts=mounts if mounts else None,
+        trust_env=False,
         headers={
             "User-Agent": HTTP_USER_AGENT,
             "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",

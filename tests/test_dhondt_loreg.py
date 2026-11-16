@@ -968,6 +968,8 @@ def test_cli_blackout_guard_skips_fetch_and_run_all() -> None:
     assert "LOREG Art. 69.7" in res_run.stdout
 
     res_override = RUNNER.invoke(
-        app, ["fetch", "--no-respect-blackout", "--now", "2026-11-26T12:00:00+01:00"]
+        app,
+        ["fetch", "--offline", "--no-respect-blackout", "--now", "2026-11-26T12:00:00+01:00"],
     )
-    assert res_override.exit_code == 1
+    assert res_override.exit_code == 0
+    assert "LOREG Art. 69.7" not in res_override.stdout

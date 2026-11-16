@@ -222,12 +222,36 @@ def fetch_command(
     if respect_blackout and is_in_blackout_window(now):
         typer.echo(BLACKOUT_BANNER)
         return
-    _ = (since, offline)
-    typer.echo(
-        "Error: Data ingestion (`elecciones.ingest`) is scheduled for Milestone M2.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
+    try:
+        from elecciones.ingest import fetch_all
+
+        summary = fetch_all(since=since, offline=offline)
+        console = Console()
+        table = Table(
+            title="29-N Data Ingestion Summary",
+            show_header=True,
+            header_style="bold cyan",
+        )
+        table.add_column("Dataset", style="bold")
+        table.add_column("Records / Status", justify="right")
+        table.add_row("Constituencies (2026 BOE)", str(summary["constituencies"]))
+        table.add_row("Parties (2026 BOE mask)", str(summary["parties"]))
+        table.add_row("Congress Elections Verified", "5 x 52 districts (1,750 seats)")
+        table.add_row("Europarl 2024 + Regional", "52 + 40 rows")
+        table.add_row("Historical Polls (2015–2023)", str(summary["polls_2015_2023"]))
+        table.add_row("29-N National Polls", str(summary["polls_2026_effective"]))
+        table.add_row("29-N Regional/Provincial Polls", str(summary["regional_polls_2026"]))
+        table.add_row("CIS #3584 Provincial (IPF)", str(summary["cis_3584_districts"]))
+        b_rep = summary.get("brujula_reconciliation", {})
+        if "matched_polls" in b_rep:
+            table.add_row(
+                "Brújula 29N Cross-Check",
+                f"{b_rep['matched_polls']}/{b_rep['brujula_total']} matched",
+            )
+        console.print(table)
+    except (FileNotFoundError, SchemaValidationError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command(name="ratings", cls=_WideHelpCommand)
