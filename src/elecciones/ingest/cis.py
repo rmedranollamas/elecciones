@@ -650,7 +650,14 @@ def build_cis_3584_and_transfers(
         else:
             national_2026_polls = []
 
-    xlsx_path = ensure_cis_3584_xlsx(offline=offline, raw_cache_dir=raw_cache_dir)
+    cis_csv = polls_root / "cis_3584_provincial.csv"
+    tr_path = meta_root / "coalition_transfers.json"
+    try:
+        xlsx_path = ensure_cis_3584_xlsx(offline=offline, raw_cache_dir=raw_cache_dir)
+    except FileNotFoundError:
+        if offline and cis_csv.is_file() and tr_path.is_file():
+            return load_cis_3584_provincial(cis_csv), load_coalition_transfers(tr_path)
+        raise
     wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
     try:
         pond_weights = parse_cis_3584_weights(wb)

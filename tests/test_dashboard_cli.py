@@ -101,7 +101,11 @@ def test_cli_dashboard_and_run_all_and_blackout_guard(tmp_path: Path, monkeypatc
     iso_root = tmp_path / "repo"
     iso_root.mkdir()
     os.symlink(repo_root / "pyproject.toml", iso_root / "pyproject.toml")
-    shutil.copytree(repo_root / "data", iso_root / "data")
+    shutil.copytree(
+        repo_root / "data",
+        iso_root / "data",
+        ignore=shutil.ignore_patterns("raw_cache"),
+    )
     monkeypatch.setenv("ELECCIONES_REPO_ROOT", str(iso_root))
 
     res_all = runner.invoke(

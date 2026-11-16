@@ -43,6 +43,8 @@ from elecciones.schemas import (
     SchemaValidationError,
     SenateSpec,
     SubdistrictSenateSpec,
+    load_constituencies_catalog,
+    load_parties_catalog,
 )
 
 # ---------------------------------------------------------------------------
@@ -513,18 +515,24 @@ def build_constituencies_catalog(
     write_file: bool = True,
 ) -> ConstituenciesCatalog:
     """Build and validate ``data/metadata/constituencies_2026.json``."""
-    conv_xml = ensure_cached_file(
-        "boe_2026_convocatoria.xml",
-        BOE_URLS["boe_2026_convocatoria.xml"],
-        offline=offline,
-        raw_cache_dir=raw_cache_dir,
-    )
-    pdf_2023 = ensure_cached_file(
-        "boe_2023_07.pdf",
-        BOE_URLS["boe_2023_07.pdf"],
-        offline=offline,
-        raw_cache_dir=raw_cache_dir,
-    )
+    out_path = (metadata_dir or get_metadata_dir()) / "constituencies_2026.json"
+    try:
+        conv_xml = ensure_cached_file(
+            "boe_2026_convocatoria.xml",
+            BOE_URLS["boe_2026_convocatoria.xml"],
+            offline=offline,
+            raw_cache_dir=raw_cache_dir,
+        )
+        pdf_2023 = ensure_cached_file(
+            "boe_2023_07.pdf",
+            BOE_URLS["boe_2023_07.pdf"],
+            offline=offline,
+            raw_cache_dir=raw_cache_dir,
+        )
+    except FileNotFoundError:
+        if offline and out_path.is_file():
+            return load_constituencies_catalog(out_path)
+        raise
     seats_2026_map = parse_boe_2026_seats(conv_xml)
     cuadro_2023 = parse_boe_2023_cuadro_uno(pdf_2023)
 
@@ -970,18 +978,24 @@ def build_parties_catalog(
     write_file: bool = True,
 ) -> PartiesCatalog:
     """Build and validate ``data/metadata/parties_2026.json`` from 3 Nov 2026 BOE."""
-    cand_xml = ensure_cached_file(
-        "boe_2026_candidaturas.xml",
-        BOE_URLS["boe_2026_candidaturas.xml"],
-        offline=offline,
-        raw_cache_dir=raw_cache_dir,
-    )
-    corr_xml = ensure_cached_file(
-        "boe_2026_cand_corr.xml",
-        BOE_URLS["boe_2026_cand_corr.xml"],
-        offline=offline,
-        raw_cache_dir=raw_cache_dir,
-    )
+    out_path = (metadata_dir or get_metadata_dir()) / "parties_2026.json"
+    try:
+        cand_xml = ensure_cached_file(
+            "boe_2026_candidaturas.xml",
+            BOE_URLS["boe_2026_candidaturas.xml"],
+            offline=offline,
+            raw_cache_dir=raw_cache_dir,
+        )
+        corr_xml = ensure_cached_file(
+            "boe_2026_cand_corr.xml",
+            BOE_URLS["boe_2026_cand_corr.xml"],
+            offline=offline,
+            raw_cache_dir=raw_cache_dir,
+        )
+    except FileNotFoundError:
+        if offline and out_path.is_file():
+            return load_parties_catalog(out_path)
+        raise
     mask_by_cpro = parse_boe_2026_candidacy_mask(cand_xml, corr_xml)
 
     specs: list[PartySpec] = []
@@ -1185,9 +1199,17 @@ def build_congress_from_dat(
     write_file: bool = True,
 ) -> list[ConstituencyElectionResult]:
     """Build and verify a 52-district historical Congress CSV from Infoelectoral ``.DAT`` files."""
-    dat_dir = _ensure_infoelectoral_dir(
-        election_code, offline=offline, raw_cache_dir=raw_cache_dir
+    snap_path = (elections_dir or get_elections_dir()) / (
+        f"congress_{election_id.replace('-', '_')}.csv"
     )
+    try:
+        dat_dir = _ensure_infoelectoral_dir(
+            election_code, offline=offline, raw_cache_dir=raw_cache_dir
+        )
+    except FileNotFoundError:
+        if offline and snap_path.is_file():
+            return load_congress_results(election_id, elections_dir=elections_dir)
+        raise
     f03 = next(dat_dir.glob("03*.DAT"))
     f07 = next(dat_dir.glob("07*.DAT"))
     f08 = next(dat_dir.glob("08*.DAT"))
@@ -1350,18 +1372,24 @@ def build_congress_2023_from_boe(
     write_file: bool = True,
 ) -> list[ConstituencyElectionResult]:
     """Build and verify ``congress_2023_07.csv`` from official BOE XML + Cuadro I PDF."""
-    xml_path = ensure_cached_file(
-        "boe_2023_07.xml",
-        BOE_URLS["boe_2023_07.xml"],
-        offline=offline,
-        raw_cache_dir=raw_cache_dir,
-    )
-    pdf_path = ensure_cached_file(
-        "boe_2023_07.pdf",
-        BOE_URLS["boe_2023_07.pdf"],
-        offline=offline,
-        raw_cache_dir=raw_cache_dir,
-    )
+    snap_path = (elections_dir or get_elections_dir()) / "congress_2023_07.csv"
+    try:
+        xml_path = ensure_cached_file(
+            "boe_2023_07.xml",
+            BOE_URLS["boe_2023_07.xml"],
+            offline=offline,
+            raw_cache_dir=raw_cache_dir,
+        )
+        pdf_path = ensure_cached_file(
+            "boe_2023_07.pdf",
+            BOE_URLS["boe_2023_07.pdf"],
+            offline=offline,
+            raw_cache_dir=raw_cache_dir,
+        )
+    except FileNotFoundError:
+        if offline and snap_path.is_file():
+            return load_congress_results("2023-07", elections_dir=elections_dir)
+        raise
     cuadro = parse_boe_2023_cuadro_uno(pdf_path)
 
     root = ET.parse(xml_path).getroot()
@@ -1534,19 +1562,40 @@ def build_europarl_2024(
     write_file: bool = True,
 ) -> list[dict[str, Any]]:
     """Build ``data/elections/europarl_2024_06.csv`` from BOE XML + errata verification."""
-    ep_xml = ensure_cached_file(
-        "boe_2024_ep.xml",
-        BOE_URLS["boe_2024_ep.xml"],
-        offline=offline,
-        raw_cache_dir=raw_cache_dir,
-    )
-    # Also ensure errata file is fetched/cached and audited against provincial sums
-    err_xml = ensure_cached_file(
-        "boe_2024_ep_errata.xml",
-        BOE_URLS["boe_2024_ep_errata.xml"],
-        offline=offline,
-        raw_cache_dir=raw_cache_dir,
-    )
+    snap_path = (elections_dir or get_elections_dir()) / "europarl_2024_06.csv"
+    try:
+        ep_xml = ensure_cached_file(
+            "boe_2024_ep.xml",
+            BOE_URLS["boe_2024_ep.xml"],
+            offline=offline,
+            raw_cache_dir=raw_cache_dir,
+        )
+        # Also ensure errata file is fetched/cached and audited against provincial sums
+        err_xml = ensure_cached_file(
+            "boe_2024_ep_errata.xml",
+            BOE_URLS["boe_2024_ep_errata.xml"],
+            offline=offline,
+            raw_cache_dir=raw_cache_dir,
+        )
+    except FileNotFoundError:
+        if offline and snap_path.is_file():
+            int_cols = {"censo", "votantes", "nulos", "validos", "blancos"}
+            loaded: list[dict[str, Any]] = []
+            with snap_path.open("r", encoding="utf-8", newline="") as fh:
+                for raw in csv.DictReader(fh):
+                    row_d: dict[str, Any] = {}
+                    for k, v in raw.items():
+                        if k in int_cols or k.startswith("votes_"):
+                            row_d[k] = int(v or 0)
+                        else:
+                            row_d[k] = v
+                    loaded.append(row_d)
+            if len(loaded) != 52:
+                raise SchemaValidationError(
+                    f"Expected 52 rows in {snap_path}, got {len(loaded)}"
+                ) from None
+            return loaded
+        raise
     _ = ET.parse(err_xml)
 
     root = ET.parse(ep_xml).getroot()
@@ -1981,8 +2030,17 @@ def build_regional_2024_2026(
     """Build ``data/elections/regional_2024_2026.csv`` for all 7 2024–2026 CCAA cycles."""
     cache_dir = raw_cache_dir or get_raw_cache_dir()
     cache_file = cache_dir / "wikipedia_regional_elections.json"
+    snap_path = (elections_dir or get_elections_dir()) / "regional_2024_2026.csv"
     if not (cache_file.is_file() and cache_file.stat().st_size > 0):
         if offline:
+            if snap_path.is_file():
+                with snap_path.open("r", encoding="utf-8", newline="") as fh:
+                    rows = list(csv.DictReader(fh))
+                if len(rows) < 35:
+                    raise SchemaValidationError(
+                        f"Expected >= 35 rows in {snap_path}, got {len(rows)}"
+                    )
+                return rows
             raise FileNotFoundError(f"Missing {cache_file} in offline mode.")
         titles_q = urllib.parse.quote("|".join(WIKI_REGIONAL_TITLES))
         url = (

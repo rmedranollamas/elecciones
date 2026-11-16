@@ -1122,43 +1122,48 @@ def build_national_2015_2023_polls(
     write_file: bool = True,
 ) -> list[PollRecord]:
     """Build ``data/polls/national_2015_2023.csv`` across selected general elections."""
-    all_records: list[PollRecord] = []
-    if since <= 2015:
-        p15 = ensure_wiki_html("2015-12", offline=offline, raw_cache_dir=raw_cache_dir)
-        all_records.extend(
-            parse_national_wiki_html(p15, page_key="2015-12", target_election_id="2015-12")
-        )
-    if since <= 2016:
-        p16 = ensure_wiki_html("2016-06", offline=offline, raw_cache_dir=raw_cache_dir)
-        all_records.extend(
-            parse_national_wiki_html(p16, page_key="2016-06", target_election_id="2016-06")
-        )
-    if since <= 2019:
-        p19a = ensure_wiki_html("2019-04", offline=offline, raw_cache_dir=raw_cache_dir)
-        all_records.extend(
-            parse_national_wiki_html(p19a, page_key="2019-04", target_election_id="2019-04")
-        )
-        p19n = ensure_wiki_html("2019-11", offline=offline, raw_cache_dir=raw_cache_dir)
-        all_records.extend(
-            parse_national_wiki_html(p19n, page_key="2019-11", target_election_id="2019-11")
-        )
-    if since <= 2023:
-        p23_early = ensure_wiki_html(
-            "2023-07-early", offline=offline, raw_cache_dir=raw_cache_dir
-        )
-        all_records.extend(
-            parse_national_wiki_html(
-                p23_early, page_key="2023-07-early", target_election_id="2023-07"
+    out_path = (polls_dir or get_polls_dir()) / "national_2015_2023.csv"
+    try:
+        all_records: list[PollRecord] = []
+        if since <= 2015:
+            p15 = ensure_wiki_html("2015-12", offline=offline, raw_cache_dir=raw_cache_dir)
+            all_records.extend(
+                parse_national_wiki_html(p15, page_key="2015-12", target_election_id="2015-12")
             )
-        )
-        p23 = ensure_wiki_html("2023-07", offline=offline, raw_cache_dir=raw_cache_dir)
-        all_records.extend(
-            parse_national_wiki_html(p23, page_key="2023-07", target_election_id="2023-07")
-        )
+        if since <= 2016:
+            p16 = ensure_wiki_html("2016-06", offline=offline, raw_cache_dir=raw_cache_dir)
+            all_records.extend(
+                parse_national_wiki_html(p16, page_key="2016-06", target_election_id="2016-06")
+            )
+        if since <= 2019:
+            p19a = ensure_wiki_html("2019-04", offline=offline, raw_cache_dir=raw_cache_dir)
+            all_records.extend(
+                parse_national_wiki_html(p19a, page_key="2019-04", target_election_id="2019-04")
+            )
+            p19n = ensure_wiki_html("2019-11", offline=offline, raw_cache_dir=raw_cache_dir)
+            all_records.extend(
+                parse_national_wiki_html(p19n, page_key="2019-11", target_election_id="2019-11")
+            )
+        if since <= 2023:
+            p23_early = ensure_wiki_html(
+                "2023-07-early", offline=offline, raw_cache_dir=raw_cache_dir
+            )
+            all_records.extend(
+                parse_national_wiki_html(
+                    p23_early, page_key="2023-07-early", target_election_id="2023-07"
+                )
+            )
+            p23 = ensure_wiki_html("2023-07", offline=offline, raw_cache_dir=raw_cache_dir)
+            all_records.extend(
+                parse_national_wiki_html(p23, page_key="2023-07", target_election_id="2023-07")
+            )
+    except FileNotFoundError:
+        if offline and out_path.is_file():
+            return [r for r in load_national_polls(out_path) if int(r.election_id[:4]) >= since]
+        raise
 
     all_records.sort(key=lambda r: (r.election_id, r.fieldwork_end, r.fieldwork_start, r.pollster))
     if write_file:
-        out_path = (polls_dir or get_polls_dir()) / "national_2015_2023.csv"
         _write_national_polls_csv(all_records, out_path)
     return all_records
 
@@ -1172,15 +1177,20 @@ def build_national_2026_polls(
     write_file: bool = True,
 ) -> list[PollRecord]:
     """Build ``data/polls/national_2026.csv`` from live Wikipedia 2026 tables."""
-    p26 = ensure_wiki_html(
-        "2026-11",
-        offline=offline,
-        refresh_live=refresh_live,
-        raw_cache_dir=raw_cache_dir,
-    )
+    out_path = (polls_dir or get_polls_dir()) / "national_2026.csv"
+    try:
+        p26 = ensure_wiki_html(
+            "2026-11",
+            offline=offline,
+            refresh_live=refresh_live,
+            raw_cache_dir=raw_cache_dir,
+        )
+    except FileNotFoundError:
+        if offline and out_path.is_file():
+            return load_national_polls(out_path)
+        raise
     records = parse_national_wiki_html(p26, page_key="2026-11", target_election_id="2026-11")
     if write_file:
-        out_path = (polls_dir or get_polls_dir()) / "national_2026.csv"
         _write_national_polls_csv(records, out_path)
     return records
 
@@ -1194,15 +1204,20 @@ def build_regional_2026_polls(
     write_file: bool = True,
 ) -> list[RegionalPollRecord]:
     """Build ``data/polls/regional_2026.csv`` from sub-national Wikipedia tables."""
-    psub = ensure_wiki_html(
-        "2026-11-sub",
-        offline=offline,
-        refresh_live=refresh_live,
-        raw_cache_dir=raw_cache_dir,
-    )
+    out_path = (polls_dir or get_polls_dir()) / "regional_2026.csv"
+    try:
+        psub = ensure_wiki_html(
+            "2026-11-sub",
+            offline=offline,
+            refresh_live=refresh_live,
+            raw_cache_dir=raw_cache_dir,
+        )
+    except FileNotFoundError:
+        if offline and out_path.is_file():
+            return load_regional_polls(out_path)
+        raise
     records = parse_regional_wiki_html(psub)
     if write_file:
-        out_path = (polls_dir or get_polls_dir()) / "regional_2026.csv"
         _write_regional_polls_csv(records, out_path)
     return records
 
