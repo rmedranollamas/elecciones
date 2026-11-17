@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "Probabilistic statistical predictor for Spain's 29-N (2026) Congress of Deputies election under LOREG Art. 163"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.11"
+requires-python = ">=3.11.5"
 dependencies = [
     "beautifulsoup4>=4.12.3",
     "httpx>=0.27.2",
