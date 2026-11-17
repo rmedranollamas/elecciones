@@ -44,6 +44,10 @@ WIKI_POLL_PAGES: Final[dict[str, tuple[str, bool]]] = {
         False,
     ),
     "2023-07": ("Opinion_polling_for_the_2023_Spanish_general_election", False),
+    "2026-11-early": (
+        "Nationwide_opinion_polling_for_the_2026_Spanish_general_election_(2023–2024)",
+        False,
+    ),
     "2026-11": ("Opinion_polling_for_the_2026_Spanish_general_election", True),
     "2026-11-sub": (
         "Sub-national_opinion_polling_for_the_2026_Spanish_general_election",
@@ -53,7 +57,8 @@ WIKI_POLL_PAGES: Final[dict[str, tuple[str, bool]]] = {
 
 # Expected chronological top-row years for each page's Voting Intention tables
 _PAGE_TABLE_TOP_YEARS: Final[dict[str, tuple[int, ...]]] = {
-    "2026-11": (2026, 2026, 2025, 2024, 2023),
+    "2026-11": (2026, 2026, 2025),
+    "2026-11-early": (2024, 2023),
     "2023-07": (2023, 2023, 2023, 2022),
     "2023-07-early": (2021, 2020, 2019),
     "2019-11": (2019,),
@@ -73,7 +78,7 @@ _CYCLE_WINDOWS: Final[dict[str, tuple[date, date]]] = {
 }
 
 _VALID_VOTING_HEADINGS: Final[frozenset[str]] = frozenset(
-    {"Voting intention estimates", "2021", "2020", "2019"}
+    {"Voting intention estimates", "2024", "2023", "2021", "2020", "2019"}
 )
 
 _MONTHS: Final[dict[str, int]] = {
@@ -1183,6 +1188,12 @@ def build_national_2026_polls(
     """Build ``data/polls/national_2026.csv`` from live Wikipedia 2026 tables."""
     out_path = (polls_dir or get_polls_dir()) / "national_2026.csv"
     try:
+        p26_early = ensure_wiki_html(
+            "2026-11-early",
+            offline=offline,
+            refresh_live=refresh_live,
+            raw_cache_dir=raw_cache_dir,
+        )
         p26 = ensure_wiki_html(
             "2026-11",
             offline=offline,
@@ -1193,7 +1204,17 @@ def build_national_2026_polls(
         if offline and out_path.is_file():
             return load_national_polls(out_path)
         raise
-    records = parse_national_wiki_html(p26, page_key="2026-11", target_election_id="2026-11")
+    early_records = parse_national_wiki_html(
+        p26_early, page_key="2026-11-early", target_election_id="2026-11"
+    )
+    live_records = parse_national_wiki_html(p26, page_key="2026-11", target_election_id="2026-11")
+    by_key: dict[tuple[str, date, date], PollRecord] = {}
+    for rec in early_records + live_records:
+        by_key[(rec.pollster, rec.fieldwork_start, rec.fieldwork_end)] = rec
+    records = sorted(
+        by_key.values(),
+        key=lambda r: (r.fieldwork_end, r.fieldwork_start, r.pollster),
+    )
     if write_file:
         _write_national_polls_csv(records, out_path)
     return records

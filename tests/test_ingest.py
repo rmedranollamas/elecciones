@@ -316,3 +316,59 @@ def test_cis_redebias_without_raw_cache_and_boe_pdf_url(tmp_path: Path) -> None:
     assert "cis_ipf_national_target_achieved" in transfers
 
 
+def test_build_national_2026_polls_merges_split_early_page(tmp_path: Path) -> None:
+    from elecciones.ingest.wikipedia import build_national_2026_polls
+
+    wiki_dir = tmp_path / "raw" / "wiki_html"
+    wiki_dir.mkdir(parents=True)
+    polls_dir = tmp_path / "polls"
+    polls_dir.mkdir()
+
+    def _table_html(rows_html: str) -> str:
+        return (
+            '<table class="wikitable">'
+            "<tr><th>Polling firm</th><th>Fieldwork date</th><th>Sample size</th>"
+            "<th>Turnout</th><th>PP</th><th>PSOE</th><th>Vox</th><th>Sumar</th></tr>"
+            f"{rows_html}</table>"
+        )
+
+    (wiki_dir / "2026-11-early.html").write_text(
+        "<h2>2024</h2>"
+        + _table_html(
+            "<tr><td>40dB/Prisa</td><td>27–30 Dec 2024</td><td>2,000</td>"
+            "<td>?</td><td>33.0</td><td>29.0</td><td>14.0</td><td>6.0</td></tr>"
+        )
+        + "<h2>2023</h2>"
+        + _table_html(
+            "<tr><td>Sigma Dos/El Mundo</td><td>10–14 Dec 2023</td><td>1,500</td>"
+            "<td>?</td><td>35.0</td><td>30.0</td><td>11.0</td><td>11.0</td></tr>"
+        ),
+        encoding="utf-8",
+    )
+    (wiki_dir / "2026-11.html").write_text(
+        "<h3>Voting intention estimates</h3>"
+        + _table_html(
+            "<tr><td>40dB/Prisa</td><td>10–14 Nov 2026</td><td>2,000</td>"
+            "<td>?</td><td>31.5</td><td>30.2</td><td>17.8</td><td>5.5</td></tr>"
+            "<tr><td>40dB/Prisa</td><td>27–30 Dec 2024</td><td>2,000</td>"
+            "<td>?</td><td>33.1</td><td>29.0</td><td>14.0</td><td>6.0</td></tr>"
+        ),
+        encoding="utf-8",
+    )
+
+    recs = build_national_2026_polls(
+        offline=True,
+        raw_cache_dir=tmp_path / "raw",
+        polls_dir=polls_dir,
+        write_file=True,
+    )
+    assert len(recs) == 3
+    assert [r.fieldwork_end for r in recs] == [
+        date(2023, 12, 14),
+        date(2024, 12, 30),
+        date(2026, 11, 14),
+    ]
+    # Overlapping poll prefers 2026-11 live page values
+    assert abs(recs[1].party_shares["PP"] - 0.331) < 1e-6
+    assert (polls_dir / "national_2026.csv").is_file()
+
