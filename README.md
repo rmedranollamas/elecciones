@@ -106,7 +106,7 @@ uv run pytest
 ```
 
 - [`.github/workflows/ci.yml`](.github/workflows/ci.yml): ejecuta `ruff`, toda la batería `pytest`, pruebas de humo del CLI y verificación del bloqueo Art. 69.7 en cada *push* y *pull request*.
-- [`.github/workflows/update_forecast.yml`](.github/workflows/update_forecast.yml): cron diario (`07:00 UTC`) con corte legal LOREG Art. 69.7 y despliegue automático en GitHub Pages desde `docs/`.
+- [`.github/workflows/update_forecast.yml`](.github/workflows/update_forecast.yml): cron dos veces al día (`07:17` y `19:17 UTC`) con corte legal LOREG Art. 69.7 y despliegue automático en GitHub Pages desde `docs/`.
 
 ---
 
