@@ -641,6 +641,7 @@ def build_coalition_transfer_priors(
 def build_cis_3584_and_transfers(
     *,
     offline: bool = False,
+    refresh_static: bool = False,
     raw_cache_dir: Path | None = None,
     polls_dir: Path | None = None,
     metadata_dir: Path | None = None,
@@ -667,57 +668,84 @@ def build_cis_3584_and_transfers(
 
     cis_csv = polls_root / "cis_3584_provincial.csv"
     tr_path = meta_root / "coalition_transfers.json"
-    try:
-        xlsx_path = ensure_cis_3584_xlsx(offline=offline, raw_cache_dir=raw_cache_dir)
-    except FileNotFoundError:
-        if offline and cis_csv.is_file() and tr_path.is_file():
-            return load_cis_3584_provincial(cis_csv), load_coalition_transfers(tr_path)
-        raise
-    wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
-    try:
-        pond_weights = parse_cis_3584_weights(wb)
-        headline = parse_cis_3584_headline(wb)
-        prov_raw = parse_cis_3584_provincial(wb, parties)
-        rv_data = parse_cis_3584_rv_eg23(wb)
-    finally:
-        wb.close()
+    rows_out: dict[str, dict[str, Any]] | None = None
+    transfers: dict[str, Any] | None = None
 
-    consensus = (
-        compute_non_cis_national_consensus(national_2026_polls, parties)
-        if national_2026_polls
-        else {}
-    )
-    debias_map, achieved_nat = debias_cis_provincial_ipf(
-        prov_raw, consts, parties, consensus
-    )
+    if (offline or not refresh_static) and cis_csv.is_file() and tr_path.is_file():
+        loaded_rows = load_cis_3584_provincial(cis_csv)
+        loaded_transfers = load_coalition_transfers(tr_path)
+        if offline:
+            return loaded_rows, loaded_transfers
+        rows_out = loaded_rows
+        transfers = loaded_transfers
 
-    party_ids = list(parties.party_ids())
-    consts_map = consts.by_cpro()
-    rows_out: dict[str, dict[str, Any]] = {}
-    for cpro in ALL_CPROS:
-        w_info = pond_weights[cpro]
-        p_info = prov_raw[cpro]
-        rows_out[cpro] = {
-            "cpro": cpro,
-            "constituency": consts_map[cpro].name,
-            "codauto": consts_map[cpro].codauto,
-            "n_designed": int(w_info["n_designed"]),
-            "n_realized": int(w_info["n_realized"]),
-            "pond_weight": float(w_info["pond_weight"]),
-            "weighted_n": float(p_info["weighted_n"]),
-            "raw_shares": dict(p_info["raw_shares"]),
-            "debias_shares": dict(debias_map[cpro]),
+    if rows_out is None or transfers is None:
+        try:
+            xlsx_path = ensure_cis_3584_xlsx(offline=offline, raw_cache_dir=raw_cache_dir)
+        except FileNotFoundError:
+            if offline and cis_csv.is_file() and tr_path.is_file():
+                return load_cis_3584_provincial(cis_csv), load_coalition_transfers(tr_path)
+            raise
+        wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
+        try:
+            pond_weights = parse_cis_3584_weights(wb)
+            headline = parse_cis_3584_headline(wb)
+            prov_raw = parse_cis_3584_provincial(wb, parties)
+            rv_data = parse_cis_3584_rv_eg23(wb)
+        finally:
+            wb.close()
+
+        consensus = (
+            compute_non_cis_national_consensus(national_2026_polls, parties)
+            if national_2026_polls
+            else {}
+        )
+        debias_map, achieved_nat = debias_cis_provincial_ipf(
+            prov_raw, consts, parties, consensus
+        )
+
+        consts_map = consts.by_cpro()
+        rows_out = {}
+        for cpro in ALL_CPROS:
+            w_info = pond_weights[cpro]
+            p_info = prov_raw[cpro]
+            rows_out[cpro] = {
+                "cpro": cpro,
+                "constituency": consts_map[cpro].name,
+                "codauto": consts_map[cpro].codauto,
+                "n_designed": int(w_info["n_designed"]),
+                "n_realized": int(w_info["n_realized"]),
+                "pond_weight": float(w_info["pond_weight"]),
+                "weighted_n": float(p_info["weighted_n"]),
+                "raw_shares": dict(p_info["raw_shares"]),
+                "debias_shares": dict(debias_map[cpro]),
+            }
+
+        transfers = build_coalition_transfer_priors(
+            rv_data,
+            headline,
+            elec_root / "europarl_2024_06.csv",
+            parties,
+        )
+        transfers["cis_ipf_national_target_achieved"] = {
+            k: round(v, 6) for k, v in achieved_nat.items() if v > 0.0
+        }
+    else:
+        consensus = (
+            compute_non_cis_national_consensus(national_2026_polls, parties)
+            if national_2026_polls
+            else {}
+        )
+        debias_map, achieved_nat = debias_cis_provincial_ipf(
+            rows_out, consts, parties, consensus
+        )
+        for cpro in ALL_CPROS:
+            rows_out[cpro]["debias_shares"] = dict(debias_map[cpro])
+        transfers["cis_ipf_national_target_achieved"] = {
+            k: round(v, 6) for k, v in achieved_nat.items() if v > 0.0
         }
 
-    transfers = build_coalition_transfer_priors(
-        rv_data,
-        headline,
-        elec_root / "europarl_2024_06.csv",
-        parties,
-    )
-    transfers["cis_ipf_national_target_achieved"] = {
-        k: round(v, 6) for k, v in achieved_nat.items() if v > 0.0
-    }
+    party_ids = list(parties.party_ids())
 
     if write_files:
         cis_csv = polls_root / "cis_3584_provincial.csv"
