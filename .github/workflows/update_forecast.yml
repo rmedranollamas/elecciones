@@ -2,7 +2,9 @@ name: Update 29-N Forecast & Pages
 
 on:
   schedule:
-    - cron: "0 7 * * *"
+    # Off-minute UTC schedule (07:17 & 19:17 UTC) avoids top-of-hour queue drops.
+    - cron: "17 7 * * *"
+    - cron: "17 19 * * *"
   workflow_dispatch:
     inputs:
       offline:
@@ -26,6 +28,9 @@ concurrency:
 jobs:
   update-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -73,7 +78,8 @@ jobs:
           git add data/polls data/outputs docs/index.html
           if ! git diff --cached --quiet; then
             git commit -m "chore(data): update 29-N polls, forecast & dashboard [skip ci]"
-            git push
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           else
             echo "No forecast changes to commit."
           fi
@@ -81,6 +87,8 @@ jobs:
       - name: Setup GitHub Pages
         if: steps.blackout.outputs.skip != 'true'
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Upload Pages artifact
         if: steps.blackout.outputs.skip != 'true'
