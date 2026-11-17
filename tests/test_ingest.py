@@ -296,3 +296,23 @@ def test_benchmark_pollsters_excluded_and_aragon_cha_preserved() -> None:
         for r in reg
     )
 
+
+def test_cis_redebias_without_raw_cache_and_boe_pdf_url(tmp_path: Path) -> None:
+    from elecciones.ingest import build_cis_3584_and_transfers
+    from elecciones.ingest.elections import BOE_URLS
+
+    assert BOE_URLS["boe_2023_07.pdf"].endswith("/2023/09/01/pdfs/BOE-A-2023-18907.pdf")
+
+    empty_cache = tmp_path / "empty_raw_cache"
+    empty_cache.mkdir()
+    rows_out, transfers = build_cis_3584_and_transfers(
+        offline=False,
+        refresh_static=False,
+        raw_cache_dir=empty_cache,
+        write_files=False,
+    )
+    assert len(rows_out) == 52
+    assert abs(sum(rows_out["33"]["debias_shares"].values()) - 1.0) < 1e-6
+    assert "cis_ipf_national_target_achieved" in transfers
+
+

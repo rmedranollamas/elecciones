@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from elecciones.config import get_elections_dir, get_metadata_dir, get_polls_dir
 from elecciones.ingest.cis import (
     build_cis_3584_and_transfers,
     load_cis_3584_provincial,
@@ -38,31 +39,58 @@ def fetch_all(
     since: int = 2015,
     offline: bool = False,
     refresh_live: bool = True,
+    refresh_static: bool = False,
     raw_cache_dir: Path | None = None,
     metadata_dir: Path | None = None,
     elections_dir: Path | None = None,
     polls_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Run full Milestone 2 ingestion pipeline and return summary diagnostics."""
+    meta_root = metadata_dir or get_metadata_dir()
+    elec_root = elections_dir or get_elections_dir()
+    polls_root = polls_dir or get_polls_dir()
+
+    const_offline = offline or (
+        not refresh_static and (meta_root / "constituencies_2026.json").is_file()
+    )
+    parties_offline = offline or (
+        not refresh_static and (meta_root / "parties_2026.json").is_file()
+    )
+    static_election_files = (
+        "congress_2015_12.csv",
+        "congress_2016_06.csv",
+        "congress_2019_04.csv",
+        "congress_2019_11.csv",
+        "congress_2023_07.csv",
+        "europarl_2024_06.csv",
+        "regional_2024_2026.csv",
+    )
+    elec_offline = offline or (
+        not refresh_static and all((elec_root / fname).is_file() for fname in static_election_files)
+    )
+    hist_polls_offline = offline or (
+        not refresh_static and (polls_root / "national_2015_2023.csv").is_file()
+    )
+
     constituencies = build_constituencies_catalog(
-        offline=offline,
+        offline=const_offline,
         metadata_dir=metadata_dir,
         raw_cache_dir=raw_cache_dir,
     )
     parties = build_parties_catalog(
-        offline=offline,
+        offline=parties_offline,
         metadata_dir=metadata_dir,
         raw_cache_dir=raw_cache_dir,
     )
     election_counts = build_all_elections(
-        offline=offline,
+        offline=elec_offline,
         raw_cache_dir=raw_cache_dir,
         elections_dir=elections_dir,
     )
 
     hist_polls = build_national_2015_2023_polls(
         since=since,
-        offline=offline,
+        offline=hist_polls_offline,
         raw_cache_dir=raw_cache_dir,
         polls_dir=polls_dir,
     )
@@ -81,6 +109,7 @@ def fetch_all(
 
     cis_rows, _transfers = build_cis_3584_and_transfers(
         offline=offline,
+        refresh_static=refresh_static,
         raw_cache_dir=raw_cache_dir,
         polls_dir=polls_dir,
         metadata_dir=metadata_dir,

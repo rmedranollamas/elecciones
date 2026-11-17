@@ -56,7 +56,7 @@ BOE_URLS: Final[dict[str, str]] = {
     "boe_2026_candidaturas.xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-23103",
     "boe_2026_cand_corr.xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-23383",
     "boe_2023_07.xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2023-18907",
-    "boe_2023_07.pdf": "https://www.boe.es/boe/dias/2023/08/30/pdfs/BOE-A-2023-18907.pdf",
+    "boe_2023_07.pdf": "https://www.boe.es/boe/dias/2023/09/01/pdfs/BOE-A-2023-18907.pdf",
     "boe_2024_ep.xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2024-13092",
     "boe_2024_ep_errata.xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2024-15344",
 }
