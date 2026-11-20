@@ -37,6 +37,11 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
     assert "Madrid (28)" not in text
     assert 'id="hemicycle-svg"' in text
     assert 'id="cartogram-grid"' in text
+    assert 'id="district-select"' in text
+    assert 'id="freshness-bar"' in text
+    assert 'id="freshness-generated-at"' in text
+    assert 'id="freshness-latest-poll"' in text
+    assert "overflow-x: clip;" in text
     assert 'id="trend-svg"' in text
     assert 'id="whatif-sliders"' in text
     assert 'id="pact-builder-rows"' in text
@@ -57,6 +62,10 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
     assert by_c["28"]["seats_2026"] == 38
     assert by_c["11"]["seats_2026"] == 8
     assert len(payload["sim_sample"]) == 200
+    assert payload["metadata"]["latest_poll"] is not None
+    assert payload["metadata"]["latest_poll"]["pollster"]
+    assert payload["metadata"]["latest_poll"]["fieldwork_end"]
+    assert payload["metadata"]["n_polls_2026"] > 0
 
     # If node is on PATH, verify inline JS syntax and run behavior under minimal DOM harness
     node_bin = shutil.which("node")
@@ -293,5 +302,10 @@ def test_cli_dashboard_and_run_all_and_blackout_guard(tmp_path: Path, monkeypatc
     assert "Pipeline complete" in res_all.output
     assert (iso_root / "data" / "outputs" / "pollster_ratings.csv").is_file()
     assert (iso_root / "data" / "outputs" / "backtest_summary.json").is_file()
-    assert (iso_root / "data" / "outputs" / "forecast_29n.json").is_file()
+    fc_json = iso_root / "data" / "outputs" / "forecast_29n.json"
+    assert fc_json.is_file()
+    fc_payload = json.loads(fc_json.read_text(encoding="utf-8"))
+    assert fc_payload["metadata"]["latest_poll"] is not None
+    assert fc_payload["metadata"]["latest_poll"]["fieldwork_end"] <= "2026-11-16"
+    assert fc_payload["metadata"]["n_polls_2026"] > 0
     assert (iso_root / "docs" / "index.html").is_file()

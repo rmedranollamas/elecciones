@@ -3,16 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Predictor estadístico probabilístico para las Elecciones Generales de España 29-N (2026): 50.000 simulaciones Monte Carlo, desagregación provincial IPF, D'Hondt LOREG Art. 163 e investidura Art. 99 CE." />
+  <meta name="theme-color" content="#faf9f5" />
   <title>Elecciones 29-N 2026 · Predictor Estadístico LOREG Art. 163</title>
   <style>
     :root {
       --bg-paper: #faf9f5;
       --bg-card: #ffffff;
       --bg-subtle: #f3f0e8;
-      --ink: #121212;
+      --bg-warm: #f7f4ec;
+      --ink: #141311;
       --ink-muted: #57534e;
       --ink-soft: #78716c;
       --border: #dfd9ce;
+      --border-soft: #ebe6dc;
       --border-strong: #1c1917;
       --accent: #0055a7;
       --accent-red: #b91c1c;
@@ -21,19 +25,33 @@
       --font-serif: Georgia, "Liberation Serif", "Times New Roman", serif;
       --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      --radius: 6px;
-      --shadow-sm: 0 1px 2px rgba(18, 18, 18, 0.05);
+      --radius: 8px;
+      --radius-sm: 5px;
+      --shadow-sm: 0 1px 2px rgba(18, 18, 18, 0.045), 0 1px 1px rgba(18, 18, 18, 0.03);
+      --shadow-md: 0 6px 18px rgba(18, 18, 18, 0.08);
     }
 
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      overflow-x: clip;
+      max-width: 100%;
+      -webkit-text-size-adjust: 100%;
+    }
     body {
       margin: 0;
       background: var(--bg-paper);
       color: var(--ink);
       font-family: var(--font-sans);
-      line-height: 1.48;
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      overflow-x: clip;
+      max-width: 100%;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .tabular { font-variant-numeric: tabular-nums; }
@@ -45,27 +63,39 @@
     .masthead {
       background: var(--bg-card);
       border-bottom: 2px solid var(--border-strong);
-      padding: 18px 20px 14px;
+      padding: 16px 20px 16px;
     }
     .masthead-inner, .container, .nav-inner {
       max-width: 1320px;
       margin: 0 auto;
+      min-width: 0;
     }
     .masthead-top {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 8px 12px;
       border-bottom: 1px solid var(--border);
       padding-bottom: 10px;
       margin-bottom: 12px;
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--ink-muted);
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
     }
-    .masthead-badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .masthead-edition {
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: 0.05em;
+    }
+    .masthead-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 8px;
+      align-items: center;
+      min-width: 0;
+    }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -74,14 +104,15 @@
       border-radius: 999px;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.025em;
       text-transform: uppercase;
       border: 1px solid var(--border);
       background: var(--bg-subtle);
       color: var(--ink);
+      max-width: 100%;
     }
-    .badge-ok { background: #dcfce7; border-color: #86efac; color: #166534; }
-    .badge-blackout { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+    .badge-ok { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+    .badge-blackout { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
     .badge-counterfactual { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
 
     .masthead-main {
@@ -89,34 +120,117 @@
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: flex-end;
-      gap: 16px;
+      gap: 14px 20px;
+    }
+    .masthead-headline {
+      flex: 1 1 420px;
+      min-width: 0;
     }
     .masthead h1 {
       margin: 0;
       font-family: var(--font-serif);
-      font-size: clamp(1.65rem, 3vw, 2.35rem);
+      font-size: clamp(1.5rem, 3.2vw, 2.3rem);
       font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.12;
+      color: var(--ink);
     }
     .masthead-sub {
-      margin: 6px 0 0;
-      font-size: 0.96rem;
+      margin: 7px 0 0;
+      font-size: 0.93rem;
       color: var(--ink-muted);
       max-width: 720px;
+      line-height: 1.48;
+    }
+
+    /* Freshness & Data Provenance Bar */
+    .freshness-bar {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 18px;
+      padding: 11px 14px;
+      background: var(--bg-warm);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .freshness-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .freshness-item + .freshness-item {
+      border-left: 1px solid var(--border);
+      padding-left: 16px;
+    }
+    .freshness-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.055em;
+      color: var(--ink-soft);
+    }
+    .freshness-value {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 8px;
+      line-height: 1.35;
+    }
+    .freshness-age {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--accent-green);
+      background: #ecfdf5;
+      border: 1px solid #bbf7d0;
+      border-radius: 999px;
+      padding: 1px 7px;
+      white-space: nowrap;
+    }
+    .freshness-age:empty { display: none; }
+    .freshness-age.stale {
+      color: var(--accent-amber);
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+    .freshness-meta {
+      font-size: 12px;
+      color: var(--ink-muted);
+      line-height: 1.38;
+      overflow-wrap: anywhere;
     }
 
     /* Controls strip */
     .control-bar {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
+      gap: 10px 14px;
+      align-items: flex-end;
+      min-width: 0;
+    }
+    .control-group {
+      min-width: 0;
+      max-width: 100%;
+    }
+    .control-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
     }
     .seg-group {
       display: inline-flex;
+      flex-wrap: wrap;
+      max-width: 100%;
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       background: var(--bg-subtle);
       padding: 2px;
       gap: 2px;
@@ -128,12 +242,13 @@
       font-family: var(--font-sans);
       font-size: 12px;
       font-weight: 600;
-      padding: 5px 10px;
+      padding: 6px 10px;
       border-radius: 4px;
       cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      transition: background 0.15s ease, color 0.15s ease;
+      white-space: nowrap;
     }
-    .seg-btn:hover { color: var(--ink); }
+    .seg-btn:hover { color: var(--ink); background: rgba(255, 255, 255, 0.55); }
     .seg-btn.active {
       background: var(--border-strong);
       color: #ffffff;
@@ -145,15 +260,18 @@
       top: 0;
       z-index: 40;
       background: rgba(250, 249, 245, 0.96);
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
-      padding: 8px 20px;
+      padding: 0 20px;
     }
     .nav-inner {
       display: flex;
-      gap: 16px;
+      gap: 18px;
       overflow-x: auto;
       scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding: 9px 0;
     }
     .nav-inner::-webkit-scrollbar { display: none; }
     .nav-inner a {
@@ -162,33 +280,49 @@
       font-size: 13px;
       font-weight: 600;
       white-space: nowrap;
-      padding: 3px 0;
+      padding: 4px 0;
       border-bottom: 2px solid transparent;
+      transition: color 0.15s ease, border-color 0.15s ease;
     }
-    .nav-inner a:hover { color: var(--ink); border-bottom-color: var(--border-strong); }
+    .nav-inner a:hover,
+    .nav-inner a.active {
+      color: var(--ink);
+      border-bottom-color: var(--border-strong);
+    }
 
-    .container { padding: 20px 20px 56px; }
-    section { margin-top: 26px; }
+    .container {
+      padding: 20px 20px 56px;
+      width: 100%;
+    }
+    section {
+      margin-top: 28px;
+      scroll-margin-top: 56px;
+      min-width: 0;
+    }
+    section:first-of-type { margin-top: 4px; }
 
     .section-head {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
-      align-items: baseline;
-      gap: 10px;
+      align-items: center;
+      gap: 10px 14px;
       border-top: 2px solid var(--border-strong);
-      padding-top: 10px;
+      padding-top: 12px;
       margin-bottom: 14px;
+      min-width: 0;
     }
     .section-head h2 {
       margin: 0;
       font-family: var(--font-serif);
-      font-size: 1.38rem;
+      font-size: clamp(1.18rem, 2.2vw, 1.42rem);
       font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.2;
     }
     .section-head p {
       margin: 0;
-      font-size: 0.88rem;
+      font-size: 0.87rem;
       color: var(--ink-muted);
     }
 
@@ -198,22 +332,24 @@
       border-radius: var(--radius);
       padding: 16px 18px;
       box-shadow: var(--shadow-sm);
+      min-width: 0;
+      max-width: 100%;
     }
     .card-title {
       margin: 0 0 10px;
-      font-size: 0.95rem;
+      font-size: 0.84rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       color: var(--ink-muted);
     }
 
     /* Hero KPI grid */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     .kpi-card {
       background: var(--bg-card);
@@ -221,39 +357,61 @@
       border-radius: var(--radius);
       padding: 14px 16px;
       box-shadow: var(--shadow-sm);
+      min-width: 0;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .kpi-card:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
     }
     .kpi-label {
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.045em;
       color: var(--ink-muted);
       font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.25;
     }
     .kpi-val {
       font-family: var(--font-serif);
-      font-size: 1.75rem;
+      font-size: clamp(1.3rem, 2.3vw, 1.8rem);
       font-weight: 700;
-      margin: 4px 0 2px;
+      margin: 5px 0 3px;
       line-height: 1.1;
+      letter-spacing: -0.02em;
     }
-    .kpi-sub { font-size: 12px; color: var(--ink-muted); }
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--ink-muted);
+      line-height: 1.35;
+    }
 
     .notice-banner {
       display: none;
       margin-bottom: 14px;
-      padding: 10px 14px;
+      padding: 11px 14px;
       border-radius: var(--radius);
       background: #fffbeb;
       border: 1px solid #fcd34d;
       color: #78350f;
       font-size: 13px;
+      line-height: 1.45;
     }
-    .notice-banner.visible { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .notice-banner.visible {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
 
     /* Grid Layouts */
     .grid-2 {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr);
       gap: 16px;
       align-items: start;
     }
@@ -264,21 +422,38 @@
       align-items: start;
     }
     @media (max-width: 980px) {
-      .grid-2, .grid-2-eq { grid-template-columns: 1fr; }
+      .grid-2, .grid-2-eq { grid-template-columns: minmax(0, 1fr); }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     /* Tables */
-    .table-wrap { overflow-x: auto; }
+    .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+    }
+    .table-scroll-hint {
+      display: none;
+      font-size: 11px;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
     th, td {
-      padding: 7px 8px;
-      border-bottom: 1px solid var(--border);
+      padding: 7px 7px;
+      border-bottom: 1px solid var(--border-soft);
       text-align: left;
       vertical-align: middle;
+    }
+    #national-table th,
+    #national-table td {
+      padding: 7px 6px;
     }
     th {
       font-size: 11px;
@@ -288,6 +463,7 @@
       font-weight: 700;
       background: var(--bg-subtle);
       white-space: nowrap;
+      border-bottom: 1px solid var(--border);
     }
     th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
     th.sortable { cursor: pointer; user-select: none; }
@@ -301,25 +477,32 @@
       align-items: center;
       gap: 6px;
       font-weight: 700;
+      white-space: nowrap;
     }
     .dot {
-      width: 10px;
-      height: 10px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       flex-shrink: 0;
-      border: 1px solid rgba(0,0,0,0.12);
+      border: 1px solid rgba(0, 0, 0, 0.14);
     }
 
     /* Spark range bar */
+    .vote-range-sub {
+      color: var(--ink-muted);
+      font-size: 11.5px;
+      margin-left: 2px;
+      white-space: nowrap;
+    }
     .range-track {
       position: relative;
       height: 8px;
       background: #ece8df;
       border-radius: 999px;
-      width: 84px;
+      width: 58px;
       display: inline-block;
       vertical-align: middle;
-      margin-left: 6px;
+      margin-left: 5px;
     }
     .range-band {
       position: absolute;
@@ -336,8 +519,26 @@
       border-radius: 2px;
     }
 
+    /* CIS comparison strip */
+    .cis-strip {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .cis-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      margin-top: 4px;
+    }
+    .cis-chip {
+      white-space: nowrap;
+    }
+
     /* Hemicycle */
-    .svg-box { position: relative; width: 100%; }
+    .svg-box { position: relative; width: 100%; max-width: 100%; overflow: hidden; }
     .svg-box svg { width: 100%; height: auto; display: block; }
     .majority-bar {
       margin-top: 8px;
@@ -365,7 +566,7 @@
     .legend-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 6px 12px;
       font-size: 12px;
       color: var(--ink-muted);
       margin-top: 8px;
@@ -378,40 +579,99 @@
       grid-template-columns: repeat(10, minmax(0, 1fr));
       gap: 5px;
       margin-top: 10px;
+      width: 100%;
     }
     .tile {
       border-radius: 5px;
       padding: 5px 4px;
       min-height: 52px;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       cursor: pointer;
       border: 2px solid transparent;
-      transition: transform 0.1s, border-color 0.12s, box-shadow 0.12s;
+      transition: transform 0.1s ease, border-color 0.12s ease, box-shadow 0.12s ease;
       user-select: none;
       overflow: hidden;
     }
-    .tile:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.16); }
-    .tile.selected { border-color: #111827; box-shadow: 0 0 0 2px #faf9f5 inset, 0 4px 10px rgba(0,0,0,0.22); }
+    .tile:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16); }
+    .tile.selected { border-color: #111827; box-shadow: 0 0 0 2px #faf9f5 inset, 0 4px 10px rgba(0, 0, 0, 0.22); }
     .tile-name { font-size: 10px; font-weight: 700; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tile-bottom { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; margin-top: 3px; }
     .tile-seats { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
     .tile-tag { font-size: 9.5px; font-weight: 700; opacity: 0.92; font-variant-numeric: tabular-nums; }
-    @media (max-width: 720px) {
-      .cartogram-grid { gap: 3px; }
-      .tile { min-height: 40px; padding: 3px; }
-      .tile-name { font-size: 8.5px; }
-      .tile-seats { font-size: 10px; }
-      .tile-tag { display: none; }
+
+    /* District selector & Inspector header */
+    .inspector-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .inspector-meta {
+      text-align: right;
+      font-size: 12.5px;
+      line-height: 1.4;
+    }
+    .district-select-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .district-select {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      background: var(--bg-paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      min-height: 36px;
+      max-width: 100%;
+      flex: 1 1 200px;
+      cursor: pointer;
+    }
+    .battle-box {
+      background: var(--bg-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+    .runners-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      margin-top: 4px;
+    }
+    .runner-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     /* Quotient bars */
-    .q-row { display: grid; grid-template-columns: 78px 1fr 70px; gap: 8px; align-items: center; margin: 4px 0; font-size: 12px; }
+    .q-row {
+      display: grid;
+      grid-template-columns: minmax(68px, 86px) minmax(0, 1fr) minmax(56px, 70px);
+      gap: 8px;
+      align-items: center;
+      margin: 4px 0;
+      font-size: 12px;
+    }
     .q-track { height: 14px; background: #f1eee7; border-radius: 3px; position: relative; overflow: hidden; }
     .q-fill { height: 100%; border-radius: 3px; }
     .q-won { opacity: 0.95; }
-    .q-lost { opacity: 0.35; background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.45) 4px, rgba(255,255,255,0.45) 8px); }
+    .q-lost { opacity: 0.35; background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255, 255, 255, 0.45) 4px, rgba(255, 255, 255, 0.45) 8px); }
 
     /* Tooltip */
     .chart-tooltip {
@@ -425,7 +685,7 @@
       font-size: 12px;
       line-height: 1.38;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-      max-width: 280px;
+      max-width: min(280px, calc(100vw - 16px));
       display: none;
     }
 
@@ -435,7 +695,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 9px;
+      padding: 5px 10px;
       font-size: 12px;
       font-weight: 600;
       border: 1px solid var(--border);
@@ -443,36 +703,68 @@
       background: var(--bg-card);
       cursor: pointer;
       color: var(--ink);
+      transition: opacity 0.15s ease, background 0.15s ease;
     }
+    .party-toggle:hover { background: var(--bg-subtle); }
     .party-toggle.off { opacity: 0.42; background: var(--bg-subtle); }
 
     /* What-if sliders & Pact 3-state */
     .slider-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-      gap: 10px 14px;
+      grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+      gap: 10px 12px;
     }
     .slider-item {
       border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      padding: 9px 11px;
       background: #fcfbf8;
+      min-width: 0;
     }
     .slider-top {
       display: flex;
       justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
       font-size: 12.5px;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
-    .slider-item input[type="range"] { width: 100%; accent-color: var(--border-strong); cursor: pointer; }
+    .slider-item input[type="range"] {
+      width: 100%;
+      accent-color: var(--border-strong);
+      cursor: pointer;
+      height: 22px;
+      margin: 0;
+    }
 
+    .pact-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .pact-result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .pact-rows-box {
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      margin-bottom: 14px;
+      -webkit-overflow-scrolling: touch;
+    }
     .pact-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 5px 0;
-      border-bottom: 1px solid var(--border);
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-soft);
       font-size: 13px;
       gap: 8px;
     }
@@ -488,11 +780,13 @@
       border: 0;
       background: #ffffff;
       color: var(--ink-muted);
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
-      padding: 3px 8px;
+      padding: 5px 9px;
       cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease;
     }
+    .tri-btn:hover { background: var(--bg-subtle); color: var(--ink); }
     .tri-btn.yes.active { background: #15803d; color: #fff; }
     .tri-btn.abs.active { background: #d97706; color: #fff; }
     .tri-btn.no.active { background: #b91c1c; color: #fff; }
@@ -501,11 +795,13 @@
       border: 1px solid var(--border-strong);
       background: var(--bg-card);
       color: var(--ink);
-      border-radius: 4px;
-      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      padding: 6px 11px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
+      transition: background 0.15s ease;
+      max-width: 100%;
     }
     .btn-outline:hover { background: var(--bg-subtle); }
 
@@ -523,12 +819,17 @@
     .grade-C { background: #fee2e2; color: #991b1b; }
 
     .search-box {
-      padding: 6px 10px;
+      padding: 7px 11px;
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       font-size: 13px;
       font-family: var(--font-sans);
-      min-width: 220px;
+      min-width: 0;
+      width: 240px;
+      max-width: 100%;
+      background: var(--bg-card);
+      color: var(--ink);
+      min-height: 36px;
     }
 
     footer {
@@ -539,6 +840,103 @@
       color: var(--ink-muted);
       background: var(--bg-card);
     }
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px 16px;
+      line-height: 1.5;
+    }
+
+    /* Mobile & Tablet Responsive Refinement */
+    @media (max-width: 768px) {
+      .freshness-bar {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+      }
+      .freshness-item + .freshness-item {
+        border-left: 0;
+        border-top: 1px solid var(--border);
+        padding-left: 0;
+        padding-top: 10px;
+      }
+      .table-scroll-hint { display: block; }
+      .sticky-col-table th:first-child,
+      .sticky-col-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+      }
+      .sticky-col-table th:first-child {
+        background: var(--bg-subtle);
+      }
+      .sticky-col-table td:first-child {
+        background: var(--bg-card);
+        box-shadow: 2px 0 6px -4px rgba(18, 18, 18, 0.25);
+      }
+      .sticky-col-table tr.clickable:hover td:first-child {
+        background: #f8f6f0;
+      }
+      .cartogram-grid { gap: 3px; }
+      .tile { min-height: 40px; padding: 3px 2px; border-width: 1.5px; }
+      .tile-name { font-size: 8.5px; }
+      .tile-seats { font-size: 10px; }
+      .tile-tag { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .hide-sm { display: none !important; }
+      .masthead { padding: 12px 14px 14px; }
+      .masthead-top { gap: 6px 8px; padding-bottom: 8px; margin-bottom: 10px; }
+      .badge { font-size: 10px; padding: 2px 7px; }
+      .subnav { padding: 0 14px; }
+      .container { padding: 14px 14px 44px; }
+      footer { padding: 16px 14px; }
+      .card { padding: 13px 13px; }
+      .kpi-card { padding: 11px 12px; }
+      .kpi-grid { gap: 9px; }
+      .kpi-label { font-size: 10px; }
+      .kpi-sub { font-size: 11px; }
+      .masthead-sub { font-size: 0.87rem; }
+      .control-bar { width: 100%; }
+      .control-group { flex: 1 1 100%; }
+      .seg-group { width: 100%; display: flex; }
+      .seg-btn {
+        flex: 1 1 auto;
+        text-align: center;
+        padding: 7px 6px;
+        font-size: 11.5px;
+      }
+      .section-head { align-items: flex-start; }
+      .section-head .seg-group { width: 100%; }
+      .search-box { width: 100%; }
+      table { font-size: 12px; }
+      th, td { padding: 6px 5px; }
+      th { font-size: 10px; }
+      .range-track { display: none; }
+      #national-table .vote-range-sub,
+      #insp-party-table .vote-range-sub {
+        display: block;
+        font-size: 10.5px;
+        margin-left: 0;
+        line-height: 1.2;
+      }
+      .inspector-meta { text-align: left; }
+      .legend-row { font-size: 11.5px; }
+      .btn-outline { font-size: 11.5px; padding: 6px 9px; }
+      .cartogram-grid { gap: 2px; }
+      .tile { min-height: 36px; border-radius: 4px; }
+      .tile-name { font-size: 8px; }
+      .tile-seats { font-size: 9.5px; }
+    }
+
+    @media (max-width: 390px) {
+      .masthead { padding: 10px 12px 12px; }
+      .subnav { padding: 0 12px; }
+      .container { padding: 12px 12px 40px; }
+      .pact-result-grid { grid-template-columns: minmax(0, 1fr); }
+      .tri-btn { padding: 5px 7px; font-size: 11px; }
+    }
   </style>
 </head>
 <body>
@@ -546,10 +944,11 @@
     <div class="masthead-inner">
       <div class="masthead-top">
         <div class="masthead-badges">
-          <span>ESPAÑA · ELECCIONES GENERALES 29-N (2026)</span>
-          <span class="badge">Cortes {{ metadata.as_of_date }}</span>
-          <span class="badge">52 circunscripciones · 350 escaños</span>
-          <span class="badge">{{ "{:,}".format(metadata.n_sims).replace(",", ".") }} simulaciones ({{ metadata.simulation_runtime_ms }} ms)</span>
+          <span class="masthead-edition">ESPAÑA · ELECCIONES GENERALES 29-N (2026)</span>
+          <span class="badge hide-sm">52 circunscripciones · 350 escaños</span>
+          {% if freshness.days_to_election is not none and freshness.days_to_election >= 0 %}
+          <span class="badge tabular">Faltan {{ freshness.days_to_election }} días</span>
+          {% endif %}
         </div>
         <div class="masthead-badges">
           {% if metadata.blackout_active or metadata.live_blackout_active %}
@@ -561,23 +960,23 @@
       </div>
 
       <div class="masthead-main">
-        <div>
+        <div class="masthead-headline">
           <h1>Radiografía probabilística del Congreso 29-N</h1>
           <p class="masthead-sub">
             Modelo jerárquico bayesiano-frecuentista calibrado fuera de muestra (2015–2023) con desagregación provincial IPF bajo candidatura oficial del BOE, D'Hondt exacto LOREG Art. 163 y simulación de investidura Art. 99 CE.
           </p>
         </div>
         <div class="control-bar" aria-label="Controles de modelo">
-          <div>
-            <div style="font-size:10.5px;font-weight:700;color:var(--ink-muted);margin-bottom:3px;text-transform:uppercase;">Motor Etapa 1</div>
+          <div class="control-group">
+            <div class="control-label">Motor Etapa 1</div>
             <div class="seg-group" id="engine-toggle">
               <button class="seg-btn active" data-engine="ensemble">Ensemble</button>
               <button class="seg-btn" data-engine="kernel">Kernel</button>
               <button class="seg-btn" data-engine="state_space">Espacio-Estado</button>
             </div>
           </div>
-          <div>
-            <div style="font-size:10.5px;font-weight:700;color:var(--ink-muted);margin-bottom:3px;text-transform:uppercase;">Sensibilidad CIS</div>
+          <div class="control-group">
+            <div class="control-label">Sensibilidad CIS</div>
             <div class="seg-group" id="cis-toggle">
               <button class="seg-btn active" data-cis="with">Con CIS</button>
               <button class="seg-btn" data-cis="without">Sin CIS</button>
@@ -585,12 +984,44 @@
           </div>
         </div>
       </div>
+
+      <div class="freshness-bar" id="freshness-bar" aria-label="Actualización y última encuesta incorporada">
+        <div class="freshness-item">
+          <span class="freshness-label">Modelo generado</span>
+          <div class="freshness-value tabular">
+            <time id="freshness-generated-at" datetime="{{ freshness.generated_at_iso }}">{{ freshness.generated_at_human }}</time>
+            <span class="freshness-age" id="freshness-age"></span>
+          </div>
+          <div class="freshness-meta tabular">
+            Corte de datos {{ freshness.as_of_human }} · {{ "{:,}".format(metadata.n_sims).replace(",", ".") }} simulaciones ({{ metadata.simulation_runtime_ms }} ms)
+          </div>
+        </div>
+        <div class="freshness-item">
+          <span class="freshness-label">Última encuesta añadida</span>
+          {% if freshness.latest_poll %}
+          <div class="freshness-value">
+            <span id="freshness-latest-poll">{{ freshness.latest_poll.pollster }}{% if freshness.latest_poll.media %} ({{ freshness.latest_poll.media }}){% endif %}</span>
+            <span class="muted tabular" style="font-weight:600;font-size:12.5px;">· {{ freshness.latest_poll.fieldwork_label }}</span>
+          </div>
+          <div class="freshness-meta tabular">
+            {% if freshness.latest_poll.sample_size %}n = {{ "{:,}".format(freshness.latest_poll.sample_size).replace(",", ".") }} · {% endif %}
+            {% if freshness.latest_poll.same_day_others %}También el {{ freshness.latest_poll.date_label }}: {{ freshness.latest_poll.same_day_others | join(", ") }} · {% endif %}
+            {% if freshness.n_polls_2026 %}{{ freshness.n_polls_2026 }} sondeos 29-N acumulados{% else %}Serie demoscópica 29-N actualizada{% endif %}
+          </div>
+          {% else %}
+          <div class="freshness-value">
+            <span id="freshness-latest-poll">Corte {{ freshness.as_of_human }}</span>
+          </div>
+          <div class="freshness-meta">Sin registro detallado de última encuesta en el snapshot.</div>
+          {% endif %}
+        </div>
+      </div>
     </div>
   </header>
 
   <nav class="subnav" aria-label="Navegación de secciones">
-    <div class="nav-inner">
-      <a href="#sec-resumen">Resumen y Hemiciclo</a>
+    <div class="nav-inner" id="subnav-links">
+      <a href="#sec-resumen" class="active">Resumen y Hemiciclo</a>
       <a href="#sec-cartograma">Mapa Provincial &amp; D'Hondt</a>
       <a href="#sec-tendencia">Tendencia de Encuestas</a>
       <a href="#sec-whatif">Simulador "What-If" &amp; Art. 99</a>
@@ -610,7 +1041,7 @@
       <div class="kpi-grid" id="hero-kpis">
         {% for p in top_parties[:3] %}
         <div class="kpi-card">
-          <div class="kpi-label">{{ p.short_name }} (Mediana simulada)</div>
+          <div class="kpi-label"><span class="dot" style="background:{{ p.color }};"></span>{{ p.short_name }} (Mediana simulada)</div>
           <div class="kpi-val tabular">{{ p.median }} escaños</div>
           <div class="kpi-sub tabular">{{ p.vote_pct }}% voto · Media {{ "%.1f"|format(p.mean_seats) }} · 80%: {{ p.p10 }}–{{ p.p90 }}</div>
         </div>
@@ -631,9 +1062,9 @@
           <div class="majority-bar" id="majority-bar" title="Distribución izquierda-derecha (línea central = 176 escaños)"></div>
           <div class="majority-mid"><div class="majority-mid-line"></div></div>
           <div class="legend-row" style="justify-content:space-between;margin-top:4px;">
-            <span class="legend-item">← Mayoría izquierda/plurinacional</span>
-            <span class="legend-item"><strong>176 mayoría absoluta</strong></span>
-            <span class="legend-item">Mayoría derecha →</span>
+            <span class="legend-item">← Izquierda / plurinacional</span>
+            <span class="legend-item"><strong>176 mayoría</strong></span>
+            <span class="legend-item">Derecha →</span>
           </div>
           <div class="legend-row" id="tier-legend">
             <span class="legend-item"><span class="dot" style="background:#374151;"></span> Seguro (&ge;99%): <strong id="t-seg">{{ tier_totals.seguros }}</strong></span>
@@ -648,7 +1079,7 @@
             <span class="muted tabular" style="font-size:12px;" id="nat-table-subtitle">Monte Carlo 50.000 tiradas</span>
           </div>
           <div class="table-wrap">
-            <table id="national-table">
+            <table id="national-table" class="sticky-col-table">
               <thead>
                 <tr>
                   <th>Partido</th>
@@ -663,7 +1094,7 @@
               <tbody></tbody>
             </table>
           </div>
-          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;" id="cis-diff-strip"></div>
+          <div class="cis-strip" id="cis-diff-strip"></div>
         </div>
       </div>
     </section>
@@ -682,14 +1113,19 @@
       <div class="grid-2">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-            <h3 class="card-title" style="margin:0;">Cartograma proporcional de Congreso (haz clic en una provincia)</h3>
+            <h3 class="card-title" style="margin:0;">Cartograma proporcional de Congreso (toca una provincia)</h3>
             <span class="muted" style="font-size:11.5px;">Madrid 38 · Barcelona 32 · Valencia 16 · Cádiz 8</span>
+          </div>
+          <div class="district-select-row">
+            <label for="district-select" class="muted" style="font-size:12px;font-weight:600;">Selector rápido:</label>
+            <select id="district-select" class="district-select" aria-label="Seleccionar circunscripción"></select>
           </div>
           <div class="cartogram-grid" id="cartogram-grid"></div>
           <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
             <h3 class="card-title">Escaños más reñidos (Top 8 circunscripciones)</h3>
+            <div class="table-scroll-hint">Desliza horizontalmente para ver todas las columnas →</div>
             <div class="table-wrap">
-              <table id="battlegrounds-table">
+              <table id="battlegrounds-table" class="sticky-col-table">
                 <thead>
                   <tr>
                     <th>Provincia</th>
@@ -707,18 +1143,18 @@
         </div>
 
         <div class="card" id="district-inspector">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px;">
+          <div class="inspector-head">
             <div>
               <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;" id="insp-ccaa">—</div>
               <h3 style="margin:2px 0 0;font-family:var(--font-serif);font-size:1.35rem;" id="insp-title">Madrid — 38 escaños</h3>
             </div>
-            <div class="tabular" style="text-align:right;font-size:12.5px;" id="insp-meta">—</div>
+            <div class="tabular inspector-meta" id="insp-meta">—</div>
           </div>
 
-          <div id="insp-battle-box" style="background:var(--bg-subtle);border-radius:5px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;"></div>
+          <div id="insp-battle-box" class="battle-box"></div>
 
           <div class="table-wrap">
-            <table id="insp-party-table">
+            <table id="insp-party-table" class="sticky-col-table">
               <thead>
                 <tr>
                   <th>Candidatura</th>
@@ -771,7 +1207,7 @@
           <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
             <h4 class="card-title" style="font-size:11.5px;">Reparto LOREG Art. 163 en vivo (escenario simulado vs base)</h4>
             <div class="table-wrap">
-              <table id="whatif-table">
+              <table id="whatif-table" class="sticky-col-table">
                 <thead>
                   <tr>
                     <th>Partido</th>
@@ -789,7 +1225,7 @@
 
         <div class="card">
           <h3 class="card-title">Constructor de Investidura Art. 99 CE (1.ª y 2.ª Vuelta)</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;" id="pact-presets">
+          <div class="pact-presets" id="pact-presets">
             <button class="btn-outline" data-preset="pp_vox" type="button">PP + Vox</button>
             <button class="btn-outline" data-preset="pp_minority" type="button">PP minoría (abst. Vox/PNV)</button>
             <button class="btn-outline" data-preset="prog_sin_junts" type="button">PSOE + FA + Socios (abst. Junts)</button>
@@ -797,9 +1233,9 @@
             <button class="btn-outline" data-preset="gran_coalicion" type="button">Gran Coalición</button>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px;" id="custom-pact-result"></div>
+          <div class="pact-result-grid" id="custom-pact-result"></div>
 
-          <div id="pact-builder-rows" style="max-height:280px;overflow-y:auto;padding-right:4px;border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:14px;"></div>
+          <div id="pact-builder-rows" class="pact-rows-box"></div>
 
           <h4 class="card-title" style="font-size:11.5px;margin-bottom:6px;">Escenarios Monte Carlo precalculados (50.000 tiradas)</h4>
           <div class="table-wrap">
@@ -826,8 +1262,9 @@
         <input class="search-box" id="pollster-search" type="search" placeholder="Filtrar encuestadora…" aria-label="Filtrar encuestadora" />
       </div>
       <div class="card">
+        <div class="table-scroll-hint">Desliza horizontalmente para ver los sesgos de casa →</div>
         <div class="table-wrap">
-          <table id="pollster-table">
+          <table id="pollster-table" class="sticky-col-table">
             <thead>
               <tr>
                 <th class="sortable" data-sort="pollster">Encuestadora ↕</th>
@@ -868,8 +1305,9 @@
         <div class="grid-2-eq">
           <div class="card">
             <h3 class="card-title">Comparativa de Motores (260 carreras provinciales · 1.750 escaños)</h3>
+            <div class="table-scroll-hint">Desliza horizontalmente para ver coberturas →</div>
             <div class="table-wrap">
-              <table id="bt-models-table">
+              <table id="bt-models-table" class="sticky-col-table">
                 <thead>
                   <tr>
                     <th>Motor</th>
@@ -892,8 +1330,9 @@
             <div id="bt-tiers-bars"></div>
             <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
               <h4 class="card-title" style="font-size:11.5px;margin-bottom:6px;">Error fuera de muestra por convocatoria histórica</h4>
+              <div class="table-scroll-hint">Desliza horizontalmente para ver métricas →</div>
               <div class="table-wrap">
-                <table id="bt-elections-table">
+                <table id="bt-elections-table" class="sticky-col-table">
                   <thead>
                     <tr>
                       <th>Elección</th>
@@ -916,9 +1355,9 @@
   </main>
 
   <footer>
-    <div class="masthead-inner" style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;">
+    <div class="masthead-inner footer-inner">
       <div>
-        <strong>elecciones 29-N</strong> · Generado sin dependencias externas el {{ metadata.generated_at }} (corte de datos {{ metadata.as_of_date }}).
+        <strong>elecciones 29-N</strong> · Generado sin dependencias externas el {{ freshness.generated_at_human }} (corte de datos {{ metadata.as_of_date }}).
         Regla LOREG Art. 163 (barrera 3% incluyendo voto en blanco; Ceuta y Melilla mayoría simple) &amp; Art. 69.7 veda demoscópica (24–29 nov 2026 CET).
       </div>
       <div class="mono">Seed: {{ metadata.seed }} · Engine: {{ metadata.engine }}</div>
@@ -980,8 +1419,13 @@
       function showTip(evt, html) {
         tooltip.innerHTML = html;
         tooltip.style.display = "block";
-        const x = Math.min(window.innerWidth - 295, evt.clientX + 14);
-        const y = Math.min(window.innerHeight - 120, evt.clientY + 14);
+        const winW = Number(window.innerWidth || 1280);
+        const winH = Number(window.innerHeight || 800);
+        const tipW = Math.min(280, winW - 16);
+        const cx = evt && typeof evt.clientX === "number" ? evt.clientX : winW / 2;
+        const cy = evt && typeof evt.clientY === "number" ? evt.clientY : 120;
+        const x = Math.min(winW - tipW - 8, cx + 12);
+        const y = Math.min(winH - 120, cy + 12);
         tooltip.style.left = Math.max(8, x) + "px";
         tooltip.style.top = Math.max(8, y) + "px";
       }
@@ -1322,7 +1766,7 @@
               <td><span class="party-chip"><span class="dot" style="background:${col}"></span>${esc(pShort(r.pid))}</span></td>
               <td class="num">
                 <strong>${fmtPct(r.vsMean, 1)}</strong>
-                <span class="muted">(${fmtPct(r.vsP10, 1)}–${fmtPct(r.vsP90, 1)})</span>
+                <span class="vote-range-sub">(${fmtPct(r.vsP10, 1)}–${fmtPct(r.vsP90, 1)})</span>
                 <span class="range-track" title="80%: ${fmtPct(r.vsP10, 1)} – ${fmtPct(r.vsP90, 1)}">
                   <span class="range-band" style="left:${lPct}%;width:${wPct}%;background:${col}"></span>
                   <span class="range-mid" style="left:${mPct}%;background:${col}"></span>
@@ -1348,14 +1792,14 @@
         if (wPctCis !== null || Object.keys(heCis).length > 0) {
           const wTxt = wPctCis !== null ? `Peso efectivo CIS en Etapa 1: <strong>${wPctCis.toFixed(2)}%</strong>` : "";
           const heTxt = ["PP", "PSOE", "VOX"].filter(p => p in heCis).map(p => `${esc(pShort(p))} ${heCis[p] >= 0 ? "+" : ""}${Number(heCis[p]).toFixed(2)} pp`).join(", ");
-          heNote = `<div class="muted" style="margin-top:4px;font-size:11px;">${wTxt}${wTxt && heTxt ? " · " : ""}${heTxt ? `Sesgo de casa Jackman descontado al CIS: ${heTxt}` : ""}${DATA.metadata.as_of_date ? " (el barómetro #3584 aporta principalmente estructura geográfica en Etapa 2)." : ""}</div>`;
+          heNote = `<div class="muted" style="margin-top:5px;font-size:11px;">${wTxt}${wTxt && heTxt ? " · " : ""}${heTxt ? `Sesgo de casa Jackman descontado al CIS: ${heTxt}` : ""}${DATA.metadata.as_of_date ? " (el barómetro #3584 aporta principalmente estructura geográfica en Etapa 2)." : ""}</div>`;
         }
-        strip.innerHTML = `<strong>Impacto CIS en Etapa 1 (Con CIS vs Sin CIS):</strong> ` +
-          keyP.filter(p => p in wCis && p in woCis).map(p => {
-            const diff = (wCis[p] - woCis[p]) * 100;
-            const sign = diff >= 0 ? "+" : "";
-            return `<span style="margin-right:10px;white-space:nowrap;">${esc(pShort(p))}: <strong class="tabular">${sign}${diff.toFixed(2)} pp</strong></span>`;
-          }).join("") + heNote;
+        const cisChipsHtml = keyP.filter(p => p in wCis && p in woCis).map(p => {
+          const diff = (wCis[p] - woCis[p]) * 100;
+          const sign = diff >= 0 ? "+" : "";
+          return `<span class="cis-chip">${esc(pShort(p))}: <strong class="tabular">${sign}${diff.toFixed(2)} pp</strong></span>`;
+        }).join(" ");
+        strip.innerHTML = `<div><strong>Impacto CIS en Etapa 1 (Con CIS vs Sin CIS):</strong></div><div class="cis-chips">${cisChipsHtml}</div>${heNote}`;
 
         // Refresh Hero KPI strip cleanly for active mode
         const heroEl = document.getElementById("hero-kpis");
@@ -1372,29 +1816,33 @@
             [
               cf ? "PP (Contrafactual)" : "PP (Mediana simulada)",
               `${ppR.sMed} escaños`,
-              `${fmtPct(ppR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(ppR.sMean, 1)} · 80%: ${ppR.sP10}–${ppR.sP90}`}`
+              `${fmtPct(ppR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(ppR.sMean, 1)} · 80%: ${ppR.sP10}–${ppR.sP90}`}`,
+              pColor("PP"),
             ],
             [
               cf ? "PSOE (Contrafactual)" : "PSOE (Mediana simulada)",
               `${psR.sMed} escaños`,
-              `${fmtPct(psR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(psR.sMean, 1)} · 80%: ${psR.sP10}–${psR.sP90}`}`
+              `${fmtPct(psR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(psR.sMean, 1)} · 80%: ${psR.sP10}–${psR.sP90}`}`,
+              pColor("PSOE"),
             ],
             [
               cf ? "Vox (Contrafactual)" : "Vox (Mediana simulada)",
               `${vxR.sMed} escaños`,
-              `${fmtPct(vxR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(vxR.sMean, 1)} · 80%: ${vxR.sP10}–${vxR.sP90}`}`
+              `${fmtPct(vxR.vsMean, 1)} voto · ${cf ? "D'Hondt determinista" : `Media ${fmtNum(vxR.sMean, 1)} · 80%: ${vxR.sP10}–${vxR.sP90}`}`,
+              pColor("VOX"),
             ],
             [
               cf ? "PP + UPN + Vox (Contrafactual)" : "PP + Vox (≥ 176) · Bloqueo Art. 99.5",
               cf ? `${rightMed} escaños` : `${ppVxProb.toFixed(1)}%`,
               cf
                 ? (rightMed >= 176 ? "Alcanza mayoría absoluta (≥176)" : `A ${176 - rightMed} escaños de mayoría`)
-                : `Bloqueo institucional: ${deadProb.toFixed(1)}%`
+                : `Bloqueo institucional: ${deadProb.toFixed(1)}%`,
+              null,
             ],
           ];
-          heroEl.innerHTML = cards.map(([lbl, val, sub]) => `
+          heroEl.innerHTML = cards.map(([lbl, val, sub, dotCol]) => `
             <div class="kpi-card">
-              <div class="kpi-label">${esc(lbl)}</div>
+              <div class="kpi-label">${dotCol ? `<span class="dot" style="background:${dotCol};"></span>` : ""}${esc(lbl)}</div>
               <div class="kpi-val tabular">${esc(val)}</div>
               <div class="kpi-sub tabular">${esc(sub)}</div>
             </div>
@@ -1648,10 +2096,22 @@
         });
       }
 
+      function renderDistrictSelect() {
+        const sel = document.getElementById("district-select");
+        if (!sel) return;
+        const sorted = [...(DATA.constituencies || [])].sort((a, b) => a.name.localeCompare(b.name, "es"));
+        sel.innerHTML = sorted.map(c =>
+          `<option value="${esc(c.cpro)}"${c.cpro === STATE.selectedCpro ? " selected" : ""}>${esc(c.name)} (${c.seats_2026} ${c.seats_2026 === 1 ? "esc." : "esc."})</option>`
+        ).join("");
+        sel.value = STATE.selectedCpro;
+      }
+
       function renderDistrictInspector() {
         const activeState = getActiveDistrictState();
         const con = activeState.byCpro[STATE.selectedCpro] || activeState.constituencies[0];
         if (!con) return;
+        const sel = document.getElementById("district-select");
+        if (sel && sel.value !== con.cpro) sel.value = con.cpro;
         const det = activeState.isModified;
         const meta = CONST_META[con.cpro] || {};
         const isCity = con.cpro === "51" || con.cpro === "52";
@@ -1665,15 +2125,15 @@
 
         const lsb = con.last_seat_battle || { holder: "", cutoff_quotient: 0, runners_up: [] };
         const runnersHtml = (lsb.runners_up || []).map(r => `
-          <span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;white-space:nowrap;">
+          <span class="runner-chip">
             <span class="dot" style="background:${pColor(r.party)}"></span>
             <strong>${esc(pShort(r.party))}</strong>: +${Number(r.vote_gap_pp).toFixed(2)} pp (${fmtInt(r.vote_gap_abs)} votos)
           </span>
-        `).join("") || "Sin aspirantes próximos";
+        `).join(" ") || "<span>Sin aspirantes próximos</span>";
 
         document.getElementById("insp-battle-box").innerHTML = `
           <div><strong>Último escaño (corte):</strong> <span class="party-chip"><span class="dot" style="background:${pColor(lsb.holder)}"></span>${esc(pShort(lsb.holder))}</span> · Cifra de reparto: <strong class="tabular">${fmtInt(lsb.cutoff_quotient)}</strong></div>
-          <div style="margin-top:4px;"><strong>Aspirantes:</strong> ${runnersHtml}</div>
+          <div class="runners-list"><strong>Aspirantes:</strong> ${runnersHtml}</div>
         `;
 
         // Party table
@@ -1689,7 +2149,7 @@
                 <span class="party-chip"><span class="dot" style="background:${pColor(pid)}"></span>${esc(pShort(pid))}</span>
                 ${belowBarrier ? '<span class="muted" style="font-size:10.5px;">(&lt;3%)</span>' : ""}
               </td>
-              <td class="num">${det ? `<strong>${fmtPct(pr.vote_share_mean, 1)}</strong> <span class="muted">(sim.)</span>` : `${fmtPct(pr.vote_share_mean, 1)} <span class="muted">(${fmtPct(pr.vote_share_p10, 1)}–${fmtPct(pr.vote_share_p90, 1)})</span>`}</td>
+              <td class="num">${det ? `<strong>${fmtPct(pr.vote_share_mean, 1)}</strong> <span class="vote-range-sub">(sim.)</span>` : `<strong>${fmtPct(pr.vote_share_mean, 1)}</strong> <span class="vote-range-sub">(${fmtPct(pr.vote_share_p10, 1)}–${fmtPct(pr.vote_share_p90, 1)})</span>`}</td>
               <td class="num"><strong>${det ? pr.seats_median : fmtNum(pr.seats_mean, 2)}</strong></td>
               <td class="num">${det ? pr.seats_median : `${pr.seats_p10}–${pr.seats_p90}`}</td>
               <td class="num">${det ? `${pr.seguros} / — / —` : `${pr.seguros} / ${pr.probables} / ${pr.en_juego}`}</td>
@@ -1726,6 +2186,15 @@
       }
 
       // 100-DAY NATIONAL POLLING TREND SVG
+      const ES_MONTHS_SHORT = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+      function fmtShortEsDate(isoStr) {
+        const parts = String(isoStr || "").split("-");
+        if (parts.length !== 3) return String(isoStr || "");
+        const m = Number(parts[1]);
+        const d = Number(parts[2]);
+        return `${d} ${ES_MONTHS_SHORT[m] || parts[1]}`;
+      }
+
       function renderTrendToggles() {
         const parties = Object.keys((DATA.trend_series && DATA.trend_series.parties) || {});
         const wrap = document.getElementById("trend-toggles");
@@ -1751,12 +2220,22 @@
         const partyData = ts.parties || {};
         const polls = ts.polls || [];
         const svg = document.getElementById("trend-svg");
+        const isCompact = (typeof window !== "undefined" && Number(window.innerWidth || 1280) <= 620);
+        const W = isCompact ? 540 : 920;
+        const H = isCompact ? 300 : 330;
+        const padL = isCompact ? 38 : 46;
+        const padR = isCompact ? 16 : 24;
+        const padT = 18;
+        const padB = isCompact ? 34 : 34;
+        const axisFont = isCompact ? 12.5 : 11;
+        if (typeof svg.setAttribute === "function") {
+          svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+        }
         if (!dates.length) {
-          svg.innerHTML = `<text x="460" y="160" text-anchor="middle" fill="#78716c">Sin serie histórica suficiente</text>`;
+          svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" fill="#78716c">Sin serie histórica suficiente</text>`;
           return;
         }
 
-        const W = 920, H = 330, padL = 46, padR = 24, padT = 20, padB = 34;
         const plotW = W - padL - padR, plotH = H - padT - padB;
         const parseD = dStr => new Date(dStr + "T12:00:00Z").getTime();
         const tMin = parseD(dates[0]);
@@ -1778,15 +2257,20 @@
           if (tick % 10 !== 0 && yMax > 0.32) continue;
           const y = yPos(tick / 100);
           html += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#e7e3da" stroke-width="1" />`;
-          html += `<text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="#78716c">${tick}%</text>`;
+          html += `<text x="${padL - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="${axisFont}" fill="#78716c">${tick}%</text>`;
         }
 
         // Date ticks
-        const tickIdxs = [0, Math.floor(dates.length / 3), Math.floor((2 * dates.length) / 3), dates.length - 1];
-        [...new Set(tickIdxs)].forEach(i => {
+        const tickIdxs = isCompact
+          ? [0, Math.floor(dates.length / 2), dates.length - 1]
+          : [0, Math.floor(dates.length / 3), Math.floor((2 * dates.length) / 3), dates.length - 1];
+        const uniqueTicks = [...new Set(tickIdxs)];
+        uniqueTicks.forEach((i, pos) => {
           const x = xPos(parseD(dates[i]));
+          const anchor = pos === 0 ? "start" : pos === uniqueTicks.length - 1 ? "end" : "middle";
+          const lbl = isCompact ? fmtShortEsDate(dates[i]) : dates[i];
           html += `<line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${H - padB}" stroke="#f3f0e8" stroke-width="1" />`;
-          html += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11" fill="#78716c">${esc(dates[i])}</text>`;
+          html += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="${anchor}" font-size="${axisFont}" fill="#78716c">${esc(lbl)}</text>`;
         });
 
         // Ribbons & lines
@@ -1805,13 +2289,13 @@
 
           // Smoothed mean path
           const lineD = dates.map((d, i) => `${i === 0 ? "M" : "L"}${xPos(parseD(d)).toFixed(1)},${yPos(mean[i]).toFixed(1)}`).join(" ");
-          html += `<path d="${lineD}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" />`;
+          html += `<path d="${lineD}" fill="none" stroke="${col}" stroke-width="${isCompact ? 2.6 : 2.4}" stroke-linejoin="round" stroke-linecap="round" />`;
 
-          // End label
+          // End dot
           const lastVal = mean[mean.length - 1];
           const lx = xPos(parseD(dates[dates.length - 1]));
           const ly = yPos(lastVal);
-          html += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.5" fill="${col}" />`;
+          html += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.6" fill="${col}" />`;
         }
 
         // Poll scatter points
@@ -1823,23 +2307,25 @@
             const py = yPos(val);
             const col = pColor(pid);
             if (p.is_cis) {
-              html += `<polygon class="poll-pt" data-date="${esc(p.date)}" data-pollster="${esc(p.pollster)}" data-pid="${esc(pid)}" data-val="${val}" data-cis="1" points="${px.toFixed(1)},${(py - 4).toFixed(1)} ${(px + 4).toFixed(1)},${py.toFixed(1)} ${px.toFixed(1)},${(py + 4).toFixed(1)} ${(px - 4).toFixed(1)},${py.toFixed(1)}" fill="${col}" stroke="#111" stroke-width="0.9" fill-opacity="0.9" />`;
+              html += `<polygon class="poll-pt" data-date="${esc(p.date)}" data-pollster="${esc(p.pollster)}" data-pid="${esc(pid)}" data-val="${val}" data-cis="1" points="${px.toFixed(1)},${(py - 4.2).toFixed(1)} ${(px + 4.2).toFixed(1)},${py.toFixed(1)} ${px.toFixed(1)},${(py + 4.2).toFixed(1)} ${(px - 4.2).toFixed(1)},${py.toFixed(1)}" fill="${col}" stroke="#111" stroke-width="0.9" fill-opacity="0.9" />`;
             } else {
-              html += `<circle class="poll-pt" data-date="${esc(p.date)}" data-pollster="${esc(p.pollster)}" data-pid="${esc(pid)}" data-val="${val}" data-cis="0" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="2.7" fill="${col}" fill-opacity="0.58" />`;
+              html += `<circle class="poll-pt" data-date="${esc(p.date)}" data-pollster="${esc(p.pollster)}" data-pid="${esc(pid)}" data-val="${val}" data-cis="0" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${isCompact ? 2.9 : 2.7}" fill="${col}" fill-opacity="0.58" />`;
             }
           }
         }
 
         svg.innerHTML = html;
         svg.querySelectorAll(".poll-pt").forEach(pt => {
-          pt.addEventListener("mouseenter", evt => {
+          const onShow = evt => {
             const dStr = pt.getAttribute("data-date");
             const pol = pt.getAttribute("data-pollster");
             const pid = pt.getAttribute("data-pid");
             const val = Number(pt.getAttribute("data-val"));
             const cisTag = pt.getAttribute("data-cis") === "1" ? " · <em>CIS</em>" : "";
             showTip(evt, `<strong>${esc(pol)}</strong> (${dStr}${cisTag})<br>${esc(pShort(pid))}: <strong>${fmtPct(val, 1)}</strong>`);
-          });
+          };
+          pt.addEventListener("mouseenter", onShow);
+          pt.addEventListener("click", onShow);
           pt.addEventListener("mouseleave", hideTip);
         });
       }
@@ -2312,9 +2798,88 @@
         });
       });
 
+      const districtSel = document.getElementById("district-select");
+      if (districtSel) {
+        districtSel.addEventListener("change", () => {
+          STATE.selectedCpro = districtSel.value;
+          renderCartogram();
+          renderDistrictInspector();
+        });
+      }
+
+      function renderFreshnessAge() {
+        const ageEl = document.getElementById("freshness-age");
+        const genIso = DATA.metadata && DATA.metadata.generated_at;
+        if (!ageEl || !genIso) return;
+        const ts = new Date(genIso).getTime();
+        if (Number.isNaN(ts)) return;
+        const diffMs = Date.now() - ts;
+        if (diffMs < 0) {
+          ageEl.textContent = "recién generado";
+          return;
+        }
+        const mins = Math.floor(diffMs / 60000);
+        const hrs = Math.floor(mins / 60);
+        const days = Math.floor(hrs / 24);
+        if (mins < 2) {
+          ageEl.textContent = "hace un momento";
+        } else if (mins < 60) {
+          ageEl.textContent = `hace ${mins} min`;
+        } else if (hrs < 24) {
+          ageEl.textContent = `hace ${hrs} h`;
+        } else {
+          ageEl.textContent = days === 1 ? "hace 1 día" : `hace ${days} días`;
+          if (ageEl.classList && typeof ageEl.classList.add === "function") {
+            ageEl.classList.add("stale");
+          }
+        }
+      }
+
+      // Responsive trend chart redraw & touch tooltip dismissal (guarded for headless tests)
+      if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+        let lastCompact = Number(window.innerWidth || 1280) <= 620;
+        let resizeTimer = null;
+        window.addEventListener("resize", () => {
+          const nowCompact = Number(window.innerWidth || 1280) <= 620;
+          if (nowCompact === lastCompact) return;
+          lastCompact = nowCompact;
+          if (typeof setTimeout === "function") {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => { renderTrendChart(); }, 120);
+          } else {
+            renderTrendChart();
+          }
+        });
+        window.addEventListener("scroll", hideTip, { passive: true });
+      }
+
+      // Active subnav section highlighting on scroll
+      if (typeof IntersectionObserver !== "undefined" && typeof document.querySelectorAll === "function") {
+        const navLinks = Array.from(document.querySelectorAll("#subnav-links a"));
+        const sections = Array.from(document.querySelectorAll("main section[id]"));
+        if (navLinks.length && sections.length) {
+          const byHref = Object.fromEntries(navLinks.map(a => [a.getAttribute("href"), a]));
+          const observer = new IntersectionObserver(
+            entries => {
+              const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+              if (visible.length) {
+                const activeLink = byHref["#" + visible[0].target.id];
+                if (activeLink) {
+                  navLinks.forEach(a => a.classList.toggle("active", a === activeLink));
+                }
+              }
+            },
+            { rootMargin: "-20% 0px -65% 0px", threshold: [0.05, 0.25] }
+          );
+          sections.forEach(sec => observer.observe(sec));
+        }
+      }
+
       // INITIAL RENDER
+      renderFreshnessAge();
       syncModeButtons();
       renderHemicycleAndNational();
+      renderDistrictSelect();
       renderCartogram();
       renderBattlegrounds();
       renderDistrictInspector();

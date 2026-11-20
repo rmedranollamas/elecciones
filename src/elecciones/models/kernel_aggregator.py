@@ -140,6 +140,48 @@ def filter_polls_as_of(
     return out
 
 
+def summarize_latest_poll(
+    polls: Sequence[PollRecord],
+    as_of: date,
+    *,
+    exclude_cis_headline: bool = False,
+) -> tuple[dict[str, Any] | None, int]:
+    """Return metadata for the most recent active poll up to ``as_of`` and total poll count."""
+    active = filter_polls_as_of(
+        polls,
+        as_of,
+        exclude_cis_headline=exclude_cis_headline,
+    )
+    if not active:
+        return None, 0
+    ordered = sorted(
+        active,
+        key=lambda r: (r.effective_pub_date, r.fieldwork_end, r.fieldwork_start, r.pollster),
+    )
+    latest = ordered[-1]
+    latest_date = latest.effective_pub_date
+    same_day = [p for p in ordered if p.effective_pub_date == latest_date]
+    same_day_others = [
+        f"{p.pollster} ({p.media})" if p.media else p.pollster
+        for p in same_day[:-1]
+    ]
+    return (
+        {
+            "pollster": latest.pollster,
+            "media": latest.media,
+            "fieldwork_start": latest.fieldwork_start.isoformat(),
+            "fieldwork_end": latest.fieldwork_end.isoformat(),
+            "pub_date": latest.pub_date.isoformat() if latest.pub_date is not None else None,
+            "effective_date": latest_date.isoformat(),
+            "sample_size": latest.sample_size,
+            "is_cis": bool(latest.is_cis),
+            "same_day_count": len(same_day),
+            "same_day_others": same_day_others,
+        },
+        len(ordered),
+    )
+
+
 def compute_wave_overlap_penalties(polls: Sequence[PollRecord | RegionalPollRecord]) -> np.ndarray:
     """Compute within-pollster fieldwork overlap discount ``u_i = 1 / sum_j overlap(i, j)``.
 

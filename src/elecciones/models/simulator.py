@@ -28,6 +28,7 @@ from elecciones.models.covariance import HierarchicalCovarianceConfig, run_hiera
 from elecciones.models.dhondt import allocate_dhondt_loreg
 from elecciones.models.ensemble import run_stage1
 from elecciones.models.investiture import compute_investiture_summary
+from elecciones.models.kernel_aggregator import summarize_latest_poll
 from elecciones.models.pollster_ratings import compute_pollster_ratings
 from elecciones.models.provincial import project_2026_provinces
 from elecciones.schemas import (
@@ -405,6 +406,12 @@ def run_forecast_simulation(
             }
         )
 
+    latest_poll_info, n_polls_2026 = summarize_latest_poll(
+        polls_26,
+        eff_as_of,
+        exclude_cis_headline=exclude_cis_headline,
+    )
+
     metadata = ForecastMetadata(
         generated_at=datetime.now(MADRID_TZ).isoformat(timespec="seconds"),
         as_of_date=eff_as_of.isoformat(),
@@ -415,6 +422,8 @@ def run_forecast_simulation(
         exclude_cis_headline=bool(exclude_cis_headline),
         blackout_active=bool(is_in_blackout_window()),
         simulation_runtime_ms=round(float(sim.runtime_ms), 2),
+        latest_poll=latest_poll_info,
+        n_polls_2026=n_polls_2026,
     )
 
     bundle = ForecastBundle(
