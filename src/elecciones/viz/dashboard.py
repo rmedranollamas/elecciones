@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -13,8 +14,12 @@ from elecciones.config import (
     get_docs_dir,
     get_metadata_dir,
     get_outputs_dir,
+    get_polls_dir,
     is_in_blackout_window,
 )
+from elecciones.ingest.cross_check import apply_manual_poll_overlay, load_manual_overlays
+from elecciones.ingest.wikipedia import load_national_polls
+from elecciones.models.kernel_aggregator import summarize_latest_poll
 from elecciones.schemas import (
     BacktestSummary,
     ForecastBundle,
@@ -23,6 +28,176 @@ from elecciones.schemas import (
 )
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+_ES_MONTHS = (
+    "",
+    "ene",
+    "feb",
+    "mar",
+    "abr",
+    "may",
+    "jun",
+    "jul",
+    "ago",
+    "sep",
+    "oct",
+    "nov",
+    "dic",
+)
+
+
+def _format_es_date(iso_date: str | None) -> str:
+    """Format an ISO YYYY-MM-DD date concisely in Spanish (e.g. '19 nov 2026')."""
+    if not iso_date:
+        return "—"
+    try:
+        d = date.fromisoformat(str(iso_date)[:10])
+    except ValueError:
+        return str(iso_date)
+    return f"{d.day} {_ES_MONTHS[d.month]} {d.year}"
+
+
+def _format_es_date_range(start_iso: str | None, end_iso: str | None) -> str:
+    """Format a fieldwork date window concisely in Spanish."""
+    if not end_iso and not start_iso:
+        return "—"
+    if not start_iso or start_iso == end_iso:
+        return _format_es_date(end_iso or start_iso)
+    try:
+        ds = date.fromisoformat(str(start_iso)[:10])
+        de = date.fromisoformat(str(end_iso)[:10])
+    except ValueError:
+        return _format_es_date(end_iso or start_iso)
+    if ds == de:
+        return f"{de.day} {_ES_MONTHS[de.month]} {de.year}"
+    if ds.year == de.year and ds.month == de.month:
+        return f"{ds.day}–{de.day} {_ES_MONTHS[de.month]} {de.year}"
+    if ds.year == de.year:
+        return f"{ds.day} {_ES_MONTHS[ds.month]}–{de.day} {_ES_MONTHS[de.month]} {de.year}"
+    return f"{_format_es_date(start_iso)}–{_format_es_date(end_iso)}"
+
+
+def _format_es_datetime(iso_dt: str | None) -> str:
+    """Format an ISO-8601 timestamp into a crisp Spanish editorial dateline."""
+    if not iso_dt:
+        return "—"
+    try:
+        dt = datetime.fromisoformat(str(iso_dt))
+    except ValueError:
+        return str(iso_dt)
+    tz_label = ""
+    if dt.utcoffset() is not None:
+        offset_min = int(dt.utcoffset().total_seconds() // 60)
+        if offset_min == 60:
+            tz_label = " CET"
+        elif offset_min == 120:
+            tz_label = " CEST"
+        elif offset_min == 0:
+            tz_label = " UTC"
+        else:
+            sign = "+" if offset_min >= 0 else "-"
+            h, m = divmod(abs(offset_min), 60)
+            tz_label = f" UTC{sign}{h:02d}:{m:02d}"
+    return f"{dt.day} {_ES_MONTHS[dt.month]} {dt.year} · {dt.strftime('%H:%M')}{tz_label}"
+
+
+def _resolve_latest_poll_info(
+    bundle: ForecastBundle,
+    polls_dir: Path | None = None,
+) -> tuple[dict[str, Any] | None, int | None]:
+    """Resolve latest active poll metadata from bundle, local poll CSVs, or trend_series."""
+    latest = dict(bundle.metadata.latest_poll) if bundle.metadata.latest_poll else None
+    n_polls = bundle.metadata.n_polls_2026
+
+    if latest is None:
+        polls_root = polls_dir or get_polls_dir()
+        nat_csv = polls_root / "national_2026.csv"
+        if nat_csv.is_file():
+            try:
+                base_polls = load_national_polls(nat_csv)
+                manual_csv = polls_root / "manual_polls_2026.csv"
+                overlays = load_manual_overlays(manual_csv) if manual_csv.is_file() else []
+                eff_polls = (
+                    apply_manual_poll_overlay(base_polls, overlays)
+                    if overlays
+                    else list(base_polls)
+                )
+                as_of = date.fromisoformat(bundle.metadata.as_of_date)
+                latest, resolved_n = summarize_latest_poll(
+                    eff_polls,
+                    as_of,
+                    exclude_cis_headline=bundle.metadata.exclude_cis_headline,
+                )
+                if n_polls is None and resolved_n > 0:
+                    n_polls = resolved_n
+            except (OSError, SchemaValidationError, ValueError):
+                latest = None
+
+    if latest is None:
+        trend_polls = list(bundle.trend_series.get("polls", []))
+        if trend_polls:
+            ordered = sorted(
+                trend_polls,
+                key=lambda item: (str(item.get("date", "")), str(item.get("pollster", ""))),
+            )
+            last = ordered[-1]
+            eff_date = str(last.get("date", ""))
+            same_day = [p for p in ordered if str(p.get("date", "")) == eff_date]
+            latest = {
+                "pollster": str(last.get("pollster", "")),
+                "media": "",
+                "fieldwork_start": eff_date,
+                "fieldwork_end": eff_date,
+                "pub_date": None,
+                "effective_date": eff_date,
+                "sample_size": None,
+                "is_cis": bool(last.get("is_cis", False)),
+                "same_day_count": len(same_day),
+                "same_day_others": [str(p.get("pollster", "")) for p in same_day[:-1]],
+            }
+            if n_polls is None:
+                n_polls = len(ordered)
+
+    return latest, n_polls
+
+
+def _build_freshness_context(
+    meta_dict: dict[str, Any],
+) -> dict[str, Any]:
+    """Create human-readable Spanish freshness labels for the masthead bar."""
+    latest = meta_dict.get("latest_poll") or None
+    latest_ctx: dict[str, Any] | None = None
+    if isinstance(latest, dict) and latest.get("pollster"):
+        fw_start = latest.get("fieldwork_start")
+        fw_end = latest.get("fieldwork_end")
+        eff_date = latest.get("effective_date") or latest.get("pub_date") or fw_end
+        others = [str(x) for x in (latest.get("same_day_others") or []) if str(x).strip()]
+        latest_ctx = {
+            "pollster": str(latest["pollster"]),
+            "media": str(latest.get("media") or "").strip(),
+            "fieldwork_label": _format_es_date_range(fw_start, fw_end),
+            "date_label": _format_es_date(eff_date),
+            "effective_date": str(eff_date or ""),
+            "sample_size": latest.get("sample_size"),
+            "is_cis": bool(latest.get("is_cis", False)),
+            "same_day_others": others,
+        }
+
+    days_left: int | None = None
+    try:
+        d_elec = date.fromisoformat(str(meta_dict.get("election_date", "")))
+        d_as_of = date.fromisoformat(str(meta_dict.get("as_of_date", "")))
+        days_left = (d_elec - d_as_of).days
+    except ValueError:
+        days_left = None
+
+    return {
+        "generated_at_iso": str(meta_dict.get("generated_at", "")),
+        "generated_at_human": _format_es_datetime(meta_dict.get("generated_at")),
+        "as_of_human": _format_es_date(meta_dict.get("as_of_date")),
+        "latest_poll": latest_ctx,
+        "n_polls_2026": meta_dict.get("n_polls_2026"),
+        "days_to_election": days_left,
+    }
 
 
 def _load_ratings_csv(
@@ -107,6 +282,7 @@ def build_dashboard_payload(
     backtest: BacktestSummary | None = None,
     ratings_rows: list[dict[str, Any]] | None = None,
     metadata_dir: Path | None = None,
+    polls_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Assemble the complete validated payload embedded in ``docs/index.html``."""
     meta_root = metadata_dir or get_metadata_dir()
@@ -125,6 +301,11 @@ def build_dashboard_payload(
         compact_consts.append(_compact_constituency_dict(con.to_dict(), v_prior))
 
     meta_dict = bundle.metadata.to_dict()
+    latest_poll, n_polls_2026 = _resolve_latest_poll_info(bundle, polls_dir=polls_dir)
+    if latest_poll is not None:
+        meta_dict["latest_poll"] = latest_poll
+    if n_polls_2026 is not None:
+        meta_dict["n_polls_2026"] = int(n_polls_2026)
     # Ensure blackout flag matches live window as well as bundle metadata cleanly
     meta_dict["live_blackout_active"] = bool(is_in_blackout_window())
 
@@ -152,6 +333,7 @@ def generate_dashboard(
     ratings_path: Path | None = None,
     output_path: Path | None = None,
     metadata_dir: Path | None = None,
+    polls_dir: Path | None = None,
 ) -> Path:
     """Compile zero-backend interactive HTML editorial dashboard from forecast artifacts."""
     resolved_forecast = forecast_path or (get_outputs_dir() / "forecast_29n.json")
@@ -178,8 +360,10 @@ def generate_dashboard(
         backtest=backtest,
         ratings_rows=ratings_rows,
         metadata_dir=metadata_dir,
+        polls_dir=polls_dir,
     )
     payload_json = _safe_json_for_html_script(payload)
+    freshness = _build_freshness_context(payload["metadata"])
 
     seats_map = bundle.national["seats"]
     vs_map = bundle.national["vote_shares"]
@@ -208,6 +392,7 @@ def generate_dashboard(
     template = env.get_template("index.html.j2")
     rendered = template.render(
         metadata=payload["metadata"],
+        freshness=freshness,
         tier_totals=payload["tier_totals"],
         investiture=payload["investiture"],
         top_parties=top_parties,

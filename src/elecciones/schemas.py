@@ -1836,6 +1836,8 @@ class ForecastMetadata:
     exclude_cis_headline: bool
     blackout_active: bool
     simulation_runtime_ms: float
+    latest_poll: dict[str, Any] | None = None
+    n_polls_2026: int | None = None
 
     def __post_init__(self) -> None:
         _require_non_empty_str(self.generated_at, "generated_at")
@@ -1850,10 +1852,26 @@ class ForecastMetadata:
         _require_bool(self.blackout_active, "blackout_active")
         if _require_float(self.simulation_runtime_ms, "simulation_runtime_ms") < 0.0:
             raise SchemaValidationError("simulation_runtime_ms must be >= 0.0")
+        if self.latest_poll is not None:
+            _require_mapping(self.latest_poll, "latest_poll")
+        if self.n_polls_2026 is not None and _require_int(self.n_polls_2026, "n_polls_2026") < 0:
+            raise SchemaValidationError("n_polls_2026 must be >= 0")
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> ForecastMetadata:
         d = _require_mapping(data, "ForecastMetadata")
+        raw_latest = d.get("latest_poll")
+        latest_poll = (
+            dict(_require_mapping(raw_latest, "latest_poll"))
+            if raw_latest is not None
+            else None
+        )
+        raw_n_polls = d.get("n_polls_2026")
+        n_polls_2026 = (
+            _require_int(raw_n_polls, "n_polls_2026")
+            if raw_n_polls is not None
+            else None
+        )
         return cls(
             generated_at=_require_non_empty_str(d.get("generated_at"), "generated_at"),
             as_of_date=_require_non_empty_str(d.get("as_of_date"), "as_of_date"),
@@ -1870,10 +1888,12 @@ class ForecastMetadata:
             simulation_runtime_ms=_require_float(
                 d.get("simulation_runtime_ms"), "simulation_runtime_ms"
             ),
+            latest_poll=latest_poll,
+            n_polls_2026=n_polls_2026,
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "generated_at": self.generated_at,
             "as_of_date": self.as_of_date,
             "election_date": self.election_date,
@@ -1884,6 +1904,11 @@ class ForecastMetadata:
             "blackout_active": self.blackout_active,
             "simulation_runtime_ms": self.simulation_runtime_ms,
         }
+        if self.latest_poll is not None:
+            out["latest_poll"] = dict(self.latest_poll)
+        if self.n_polls_2026 is not None:
+            out["n_polls_2026"] = int(self.n_polls_2026)
+        return out
 
 
 @dataclass(frozen=True, slots=True)
