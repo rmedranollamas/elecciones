@@ -41,6 +41,8 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
     assert 'id="freshness-bar"' in text
     assert 'id="freshness-generated-at"' in text
     assert 'id="freshness-latest-poll"' in text
+    assert 'id="blackout-badge"' in text
+    assert 'id="countdown-badge"' in text
     assert "overflow-x: clip;" in text
     assert 'id="trend-svg"' in text
     assert 'id="whatif-sliders"' in text
@@ -66,6 +68,9 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
     assert payload["metadata"]["latest_poll"]["pollster"]
     assert payload["metadata"]["latest_poll"]["fieldwork_end"]
     assert payload["metadata"]["n_polls_2026"] > 0
+    assert payload["metadata"]["blackout_phase"] in {"pre", "blackout", "post"}
+    assert payload["metadata"]["blackout_start_cet"].startswith("2026-11-24T00:00:00")
+    assert payload["metadata"]["blackout_end_cet"].startswith("2026-11-29T20:00:00")
 
     # If node is on PATH, verify inline JS syntax and run behavior under minimal DOM harness
     node_bin = shutil.which("node")
@@ -233,12 +238,132 @@ if (ssSeats !== 350) throw new Error("State-space counterfactual seats != 350: "
 if (!getEl("cis-diff-strip").innerHTML.includes("Peso efectivo CIS")) {{
   throw new Error("Missing CIS weight note");
 }}
+
+// Verify client-side live veda & countdown badges across all time windows
+function runAtIso(isoStr) {{
+  const fakeMs = Date.parse(isoStr);
+  const FakeDate = class extends Date {{
+    constructor(...args) {{
+      if (args.length === 0) super(fakeMs);
+      else super(...args);
+    }}
+    static now() {{ return fakeMs; }}
+  }};
+  const subEls = {{}};
+  const getSubEl = id => (subEls[id] = subEls[id] || makeEl(id));
+  getSubEl("elecciones-data").textContent = payloadStr;
+  getSubEl("national-table").querySelector = () => getSubEl("national-table-tbody");
+  getSubEl("battlegrounds-table").querySelector = () => getSubEl("bg-tbody");
+  getSubEl("insp-party-table").querySelector = () => getSubEl("insp-tbody");
+  getSubEl("whatif-table").querySelector = () => getSubEl("wi-tbody");
+  getSubEl("investiture-mc-table").querySelector = () => getSubEl("inv-tbody");
+  getSubEl("pollster-table").querySelector = () => getSubEl("pol-tbody");
+  getSubEl("bt-models-table").querySelector = () => getSubEl("btm-tbody");
+  getSubEl("bt-elections-table").querySelector = () => getSubEl("bte-tbody");
+  getSubEl("whatif-sliders").querySelectorAll = () => [];
+  const subDoc = {{
+    getElementById: id => getSubEl(id),
+    createElement: tag => makeEl(tag),
+    querySelector: sel => (
+      sel.startsWith("#") ? getSubEl(sel.slice(1).split(" ")[0]).querySelector() : makeEl("")
+    ),
+    querySelectorAll: () => [],
+  }};
+  const subCtx = {{
+    document: subDoc,
+    window: {{ innerWidth: 1280, innerHeight: 800 }},
+    Math, Number, Object, Array, String, Set, Date: FakeDate, Intl, JSON, console,
+  }};
+  vm.runInNewContext(fs.readFileSync({json.dumps(str(js_file))}, "utf8"), subCtx);
+  return {{
+    blackoutText: getSubEl("blackout-badge").textContent,
+    isBlackoutCls: getSubEl("blackout-badge").classList.contains("badge-blackout"),
+    isOkCls: getSubEl("blackout-badge").classList.contains("badge-ok"),
+    countdownText: getSubEl("countdown-badge").textContent,
+    countdownDisplay: getSubEl("countdown-badge").style.display,
+  }};
+}}
+
+const preRes = runAtIso("2026-11-23T23:59:59+01:00");
+if (!preRes.isOkCls || preRes.isBlackoutCls || !preRes.blackoutText.includes("pre-veda")) {{
+  throw new Error("Expected pre-veda badge before blackout: " + JSON.stringify(preRes));
+}}
+if (preRes.countdownText !== "Faltan 6 días") {{
+  throw new Error("Expected 6 days countdown on 23-N: " + JSON.stringify(preRes));
+}}
+
+const blkRes = runAtIso("2026-11-25T08:50:00+01:00");
+if (!blkRes.isBlackoutCls || blkRes.isOkCls || !blkRes.blackoutText.includes("Veda Electoral")) {{
+  throw new Error("Expected blackout badge during veda week: " + JSON.stringify(blkRes));
+}}
+if (blkRes.countdownText !== "Faltan 4 días") {{
+  throw new Error("Expected 4 days countdown on 25-N: " + JSON.stringify(blkRes));
+}}
+
+const dayRes = runAtIso("2026-11-29T19:30:00+01:00");
+if (!dayRes.isBlackoutCls || dayRes.countdownText !== "Hoy es jornada electoral (29-N)") {{
+  throw new Error("Expected election-day blackout & countdown: " + JSON.stringify(dayRes));
+}}
+
+const postRes = runAtIso("2026-11-29T20:00:00+01:00");
+const isPostOk = !postRes.isBlackoutCls && !postRes.isOkCls;
+if (!isPostOk || !postRes.blackoutText.includes("Veda finalizada")) {{
+  throw new Error("Expected post-blackout badge after 20:00 CET: " + JSON.stringify(postRes));
+}}
+
+const afterRes = runAtIso("2026-11-30T10:00:00+01:00");
+if (afterRes.countdownDisplay !== "none") {{
+  throw new Error("Expected countdown hidden after election day: " + JSON.stringify(afterRes));
+}}
+
 console.log("JS harness passed:", {{ kernelSeats, ssSeats }});
 """,
             encoding="utf-8",
         )
         run_res = subprocess.run([node_bin, str(harness)], capture_output=True, text=True)
         assert run_res.returncode == 0, run_res.stdout + "\n" + run_res.stderr
+
+
+def test_dashboard_blackout_phases_server_side(tmp_path: Path, monkeypatch) -> None:
+    from datetime import datetime as real_datetime
+
+    import elecciones.viz.dashboard as dash_mod
+    from elecciones.config import MADRID_TZ
+
+    class _FrozenDateTime(real_datetime):
+        current: real_datetime = real_datetime(2026, 11, 25, 10, 0, tzinfo=MADRID_TZ)
+
+        @classmethod
+        def now(cls, tz=None):
+            return cls.current if tz is None else cls.current.astimezone(tz)
+
+    monkeypatch.setattr(dash_mod, "datetime", _FrozenDateTime)
+
+    # 1. Blackout week (25-N) while forecast snapshot as_of is 23-N -> Veda badge & 4 days left
+    out_blk = tmp_path / "blk.html"
+    generate_dashboard(output_path=out_blk)
+    txt_blk = out_blk.read_text(encoding="utf-8")
+    head_blk = txt_blk.split("<script>", 1)[0]
+    assert 'id="blackout-badge">Veda Electoral Art. 69.7 LOREG activa</span>' in head_blk
+    assert "Ventana pre-veda activa" not in head_blk
+    assert 'id="countdown-badge">Faltan 4 días</span>' in head_blk
+
+    # 2. Post-blackout (29-N 20:30 CET) -> Veda finalizada & Hoy es jornada electoral
+    _FrozenDateTime.current = real_datetime(2026, 11, 29, 20, 30, tzinfo=MADRID_TZ)
+    out_post = tmp_path / "post.html"
+    generate_dashboard(output_path=out_post)
+    head_post = out_post.read_text(encoding="utf-8").split("<script>", 1)[0]
+    expected_post = 'id="blackout-badge">Veda finalizada · Urnas cerradas (29-N 20:00 CET)</span>'
+    assert expected_post in head_post
+    assert 'id="countdown-badge">Hoy es jornada electoral (29-N)</span>' in head_post
+
+    # 3. Pre-blackout (23-N 18:00 CET) -> Ventana pre-veda & 6 days left
+    _FrozenDateTime.current = real_datetime(2026, 11, 23, 18, 0, tzinfo=MADRID_TZ)
+    out_pre = tmp_path / "pre.html"
+    generate_dashboard(output_path=out_pre)
+    head_pre = out_pre.read_text(encoding="utf-8").split("<script>", 1)[0]
+    assert 'id="blackout-badge">Ventana pre-veda activa (hasta 23-N)</span>' in head_pre
+    assert 'id="countdown-badge">Faltan 6 días</span>' in head_pre
 
 
 def test_dashboard_missing_optional_files_falls_back_cleanly(tmp_path: Path) -> None:

@@ -946,15 +946,19 @@
         <div class="masthead-badges">
           <span class="masthead-edition">ESPAÑA · ELECCIONES GENERALES 29-N (2026)</span>
           <span class="badge hide-sm">52 circunscripciones · 350 escaños</span>
-          {% if freshness.days_to_election is not none and freshness.days_to_election >= 0 %}
-          <span class="badge tabular">Faltan {{ freshness.days_to_election }} días</span>
+          {% if freshness.days_to_election is not none %}
+          <span class="badge tabular" id="countdown-badge"{% if freshness.days_to_election < 0 %} style="display:none;"{% endif %}>{% if freshness.days_to_election == 0 %}Hoy es jornada electoral (29-N){% elif freshness.days_to_election == 1 %}Falta 1 día{% else %}Faltan {{ freshness.days_to_election }} días{% endif %}</span>
+          {% else %}
+          <span class="badge tabular" id="countdown-badge" style="display:none;"></span>
           {% endif %}
         </div>
         <div class="masthead-badges">
-          {% if metadata.blackout_active or metadata.live_blackout_active %}
-          <span class="badge badge-blackout">Veda Electoral Art. 69.7 LOREG activa</span>
+          {% if metadata.blackout_phase == "blackout" or metadata.blackout_active or metadata.live_blackout_active %}
+          <span class="badge badge-blackout" id="blackout-badge">Veda Electoral Art. 69.7 LOREG activa</span>
+          {% elif metadata.blackout_phase == "post" %}
+          <span class="badge" id="blackout-badge">Veda finalizada · Urnas cerradas (29-N 20:00 CET)</span>
           {% else %}
-          <span class="badge badge-ok">Ventana pre-veda activa (hasta 23-N)</span>
+          <span class="badge badge-ok" id="blackout-badge">Ventana pre-veda activa (hasta 23-N)</span>
           {% endif %}
         </div>
       </div>
@@ -2875,7 +2879,72 @@
         }
       }
 
+      function getMadridCalendarDate(tsMs) {
+        if (typeof Intl !== "undefined" && typeof Intl.DateTimeFormat === "function") {
+          try {
+            const parts = new Intl.DateTimeFormat("en-US", {
+              timeZone: "Europe/Madrid",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }).formatToParts(new Date(tsMs));
+            const byType = Object.fromEntries(parts.map(p => [p.type, p.value]));
+            const y = Number(byType.year), m = Number(byType.month), d = Number(byType.day);
+            if (y && m && d) return { year: y, month: m, day: d };
+          } catch (_) { /* fallback to CET UTC+1 */ }
+        }
+        const cet = new Date(tsMs + 3600000);
+        return { year: cet.getUTCFullYear(), month: cet.getUTCMonth() + 1, day: cet.getUTCDate() };
+      }
+
+      function renderLiveStatusBadges(nowMs) {
+        const ts = typeof nowMs === "number" ? nowMs : Date.now();
+        const badge = document.getElementById("blackout-badge");
+        if (badge) {
+          const startIso = (DATA.metadata && DATA.metadata.blackout_start_cet) || "2026-11-24T00:00:00+01:00";
+          const endIso = (DATA.metadata && DATA.metadata.blackout_end_cet) || "2026-11-29T20:00:00+01:00";
+          const startMs = Date.parse(startIso);
+          const endMs = Date.parse(endIso);
+          if (!Number.isNaN(startMs) && !Number.isNaN(endMs)) {
+            const isBlackout = ts >= startMs && ts < endMs;
+            const isPre = ts < startMs;
+            badge.classList.toggle("badge-blackout", isBlackout);
+            badge.classList.toggle("badge-ok", isPre);
+            if (isBlackout) {
+              badge.textContent = "Veda Electoral Art. 69.7 LOREG activa";
+            } else if (isPre) {
+              badge.textContent = "Ventana pre-veda activa (hasta 23-N)";
+            } else {
+              badge.textContent = "Veda finalizada · Urnas cerradas (29-N 20:00 CET)";
+            }
+          }
+        }
+
+        const cdBadge = document.getElementById("countdown-badge");
+        const elecIso = (DATA.metadata && DATA.metadata.election_date) || "2026-11-29";
+        const elecMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(elecIso);
+        if (cdBadge && elecMatch) {
+          const today = getMadridCalendarDate(ts);
+          const todayUtc = Date.UTC(today.year, today.month - 1, today.day);
+          const elecUtc = Date.UTC(Number(elecMatch[1]), Number(elecMatch[2]) - 1, Number(elecMatch[3]));
+          const daysLeft = Math.round((elecUtc - todayUtc) / 86400000);
+          if (daysLeft > 1) {
+            cdBadge.textContent = `Faltan ${daysLeft} días`;
+            cdBadge.style.display = "";
+          } else if (daysLeft === 1) {
+            cdBadge.textContent = "Falta 1 día";
+            cdBadge.style.display = "";
+          } else if (daysLeft === 0) {
+            cdBadge.textContent = "Hoy es jornada electoral (29-N)";
+            cdBadge.style.display = "";
+          } else {
+            cdBadge.style.display = "none";
+          }
+        }
+      }
+
       // INITIAL RENDER
+      renderLiveStatusBadges();
       renderFreshnessAge();
       syncModeButtons();
       renderHemicycleAndNational();

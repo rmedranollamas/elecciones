@@ -11,6 +11,9 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from elecciones.config import (
+    BLACKOUT_END_CET,
+    BLACKOUT_START_CET,
+    MADRID_TZ,
     get_docs_dir,
     get_metadata_dir,
     get_outputs_dir,
@@ -186,7 +189,9 @@ def _build_freshness_context(
     try:
         d_elec = date.fromisoformat(str(meta_dict.get("election_date", "")))
         d_as_of = date.fromisoformat(str(meta_dict.get("as_of_date", "")))
-        days_left = (d_elec - d_as_of).days
+        today_madrid = datetime.now(MADRID_TZ).date()
+        ref_date = max(d_as_of, today_madrid)
+        days_left = (d_elec - ref_date).days
     except ValueError:
         days_left = None
 
@@ -306,8 +311,19 @@ def build_dashboard_payload(
         meta_dict["latest_poll"] = latest_poll
     if n_polls_2026 is not None:
         meta_dict["n_polls_2026"] = int(n_polls_2026)
-    # Ensure blackout flag matches live window as well as bundle metadata cleanly
-    meta_dict["live_blackout_active"] = bool(is_in_blackout_window())
+    # Ensure blackout flag and phase match live window as well as bundle metadata cleanly
+    now_madrid = datetime.now(MADRID_TZ)
+    live_blackout = bool(is_in_blackout_window(now_madrid))
+    meta_dict["live_blackout_active"] = live_blackout
+    if now_madrid >= BLACKOUT_END_CET:
+        blackout_phase = "post"
+    elif live_blackout or bool(meta_dict.get("blackout_active")):
+        blackout_phase = "blackout"
+    else:
+        blackout_phase = "pre"
+    meta_dict["blackout_phase"] = blackout_phase
+    meta_dict["blackout_start_cet"] = BLACKOUT_START_CET.isoformat()
+    meta_dict["blackout_end_cet"] = BLACKOUT_END_CET.isoformat()
 
     return {
         "metadata": meta_dict,
