@@ -16,6 +16,7 @@ from elecciones.config import get_outputs_dir
 from elecciones.ingest.cross_check import MANUAL_POLLS_COLUMNS
 from elecciones.models import (
     compute_investiture_summary,
+    compute_majority_histogram,
     evaluate_first_ballot,
     evaluate_second_ballot,
     run_forecast_simulation,
@@ -210,6 +211,20 @@ def test_50k_simulator_runtime_sla_and_bundle_invariants(tmp_path: Path) -> None
     loaded = ForecastBundle.load_json(out_json)
     assert loaded.metadata.n_sims == 50_000
     assert 0.0 <= loaded.investiture.deadlock_prob <= 1.0
+    mh = loaded.investiture.majority_histogram
+    assert mh is not None
+    assert mh["n_sims"] == 50_000
+    cats = {c["key"]: c for c in mh["categories"]}
+    assert set(cats.keys()) == {"pp_solo", "pp_sin_vox", "pp_vox", "en_el_aire", "psoe_socios"}
+    assert sum(c["count"] for c in mh["categories"]) == 50_000
+    assert sum(c["prob"] for c in mh["categories"]) == pytest.approx(1.0, abs=1e-4)
+    assert sum(b["total"] for b in mh["bins"]) + mh["clipped_low"] + mh["clipped_high"] == 50_000
+    assert cats["pp_solo"]["prob"] == pytest.approx(
+        loaded.investiture.first_ballot["pp_solo"].prob, abs=1e-6
+    )
+    assert (
+        cats["pp_solo"]["prob"] + cats["pp_sin_vox"]["prob"] + cats["pp_vox"]["prob"]
+    ) >= loaded.investiture.first_ballot["pp_vox"].prob - 1e-6
 
     # Deterministic repeatability on smaller fast check + manual overlay override shifts mean
     manual_csv = tmp_path / "manual.csv"
@@ -354,4 +369,87 @@ def test_model_backtest_metrics_legacy_compatibility_and_causal_ratings() -> Non
         ),
     )
     assert empty_ratings == []
+
+
+def test_majority_histogram_mutually_exclusive_partition() -> None:
+    from elecciones.schemas import InvestitureSummary
+
+    party_ids = ("PP", "UPN_PP", "VOX", "PSOE", "FA", "PNV", "CCA", "JUNTS")
+    p_idx = {p: i for i, p in enumerate(party_ids)}
+
+    # 5 synthetic 350-seat Congress chambers covering every mutually exclusive category:
+    # Row 0 -> pp_solo (PP+UPN=178)
+    # Row 1 -> pp_sin_vox (PP+UPN=170, PNV=5, CCA=2 => 177 >= 176; VOX=20 also present)
+    # Row 2 -> pp_vox (PP+UPN=150, VOX=40 => 190 >= 176; PP+UPN+PNV+CCA=156 < 176)
+    # Row 3 -> en_el_aire (PP+Vox=172 < 176, PSOE+allies no Junts=168 < 176, Junts=10 kingmaker)
+    # Row 4 -> psoe_socios (PSOE+FA+PNV+CCA=180 >= 176 without Junts)
+    seats = np.zeros((5, len(party_ids)), dtype=np.int32)
+    shares = np.zeros((5, len(party_ids)), dtype=np.float64)
+
+    # Row 0: pp_solo (PP+UPN+VOX = 58%)
+    seats[0, p_idx["PP"]] = 176
+    seats[0, p_idx["UPN_PP"]] = 2
+    seats[0, p_idx["VOX"]] = 32
+    seats[0, p_idx["PSOE"]] = 120
+    seats[0, p_idx["FA"]] = 20
+    shares[0, [p_idx["PP"], p_idx["UPN_PP"], p_idx["VOX"]]] = [0.46, 0.01, 0.11]
+
+    # Row 1: pp_sin_vox (PP+UPN+VOX = 55%)
+    seats[1, p_idx["PP"]] = 168
+    seats[1, p_idx["UPN_PP"]] = 2
+    seats[1, p_idx["PNV"]] = 5
+    seats[1, p_idx["CCA"]] = 2
+    seats[1, p_idx["VOX"]] = 20
+    seats[1, p_idx["PSOE"]] = 133
+    seats[1, p_idx["FA"]] = 20
+    shares[1, [p_idx["PP"], p_idx["UPN_PP"], p_idx["VOX"]]] = [0.45, 0.01, 0.09]
+
+    # Row 2: pp_vox (PP+UPN+VOX = 50%)
+    seats[2, p_idx["PP"]] = 148
+    seats[2, p_idx["UPN_PP"]] = 2
+    seats[2, p_idx["VOX"]] = 40
+    seats[2, p_idx["PNV"]] = 4
+    seats[2, p_idx["CCA"]] = 2
+    seats[2, p_idx["PSOE"]] = 134
+    seats[2, p_idx["FA"]] = 20
+    shares[2, [p_idx["PP"], p_idx["UPN_PP"], p_idx["VOX"]]] = [0.33, 0.01, 0.16]
+
+    # Row 3: en_el_aire (PP+UPN+VOX = 45%)
+    seats[3, p_idx["PP"]] = 130
+    seats[3, p_idx["UPN_PP"]] = 2
+    seats[3, p_idx["VOX"]] = 40
+    seats[3, p_idx["PSOE"]] = 130
+    seats[3, p_idx["FA"]] = 30
+    seats[3, p_idx["PNV"]] = 6
+    seats[3, p_idx["CCA"]] = 2
+    seats[3, p_idx["JUNTS"]] = 10
+    shares[3, [p_idx["PP"], p_idx["UPN_PP"], p_idx["VOX"]]] = [0.29, 0.01, 0.15]
+
+    # Row 4: psoe_socios (PP+UPN+VOX = 41%)
+    seats[4, p_idx["PP"]] = 120
+    seats[4, p_idx["UPN_PP"]] = 2
+    seats[4, p_idx["VOX"]] = 38
+    seats[4, p_idx["PSOE"]] = 145
+    seats[4, p_idx["FA"]] = 27
+    seats[4, p_idx["PNV"]] = 6
+    seats[4, p_idx["CCA"]] = 2
+    seats[4, p_idx["JUNTS"]] = 10
+    shares[4, [p_idx["PP"], p_idx["UPN_PP"], p_idx["VOX"]]] = [0.26, 0.01, 0.14]
+
+    assert np.all(seats.sum(axis=1) == 350)
+
+    hist = compute_majority_histogram(seats, shares, party_ids, bin_width=1.0)
+    assert hist["n_sims"] == 5
+    cats = {c["key"]: c for c in hist["categories"]}
+    for key in ("pp_solo", "pp_sin_vox", "pp_vox", "en_el_aire", "psoe_socios"):
+        assert cats[key]["count"] == 1
+        assert cats[key]["prob"] == pytest.approx(0.2)
+    assert sum(b["total"] for b in hist["bins"]) + hist["clipped_low"] + hist["clipped_high"] == 5
+
+    inv = compute_investiture_summary(seats, party_ids, national_shares=shares)
+    assert inv.majority_histogram is not None
+    roundtrip = InvestitureSummary.from_dict(inv.to_dict())
+    assert roundtrip.majority_histogram is not None
+    assert roundtrip.majority_histogram["n_sims"] == 5
+
 

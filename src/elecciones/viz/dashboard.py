@@ -311,13 +311,13 @@ def build_dashboard_payload(
         meta_dict["latest_poll"] = latest_poll
     if n_polls_2026 is not None:
         meta_dict["n_polls_2026"] = int(n_polls_2026)
-    # Ensure blackout flag and phase match live window as well as bundle metadata cleanly
+    # Ensure blackout flag and phase match live window cleanly regardless of snapshot build time
     now_madrid = datetime.now(MADRID_TZ)
     live_blackout = bool(is_in_blackout_window(now_madrid))
     meta_dict["live_blackout_active"] = live_blackout
     if now_madrid >= BLACKOUT_END_CET:
         blackout_phase = "post"
-    elif live_blackout or bool(meta_dict.get("blackout_active")):
+    elif live_blackout:
         blackout_phase = "blackout"
     else:
         blackout_phase = "pre"

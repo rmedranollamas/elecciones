@@ -168,8 +168,12 @@ def run_forecast_simulation(
         hyperparams=hyperparams,
     )
 
-    # Stage 4: Art. 99 CE 1st-ballot & 2nd-ballot Investiture Probabilities
-    investiture = compute_investiture_summary(sim.national_seats, sim.party_ids)
+    # Stage 4: Art. 99 CE 1st-ballot & 2nd-ballot Investiture Probabilities + Majority Histogram
+    investiture = compute_investiture_summary(
+        sim.national_seats,
+        sim.party_ids,
+        national_shares=sim.national_shares,
+    )
 
     # Aggregate Provincial Forecasts, Tier Slots, & Deterministic Mean D'Hondt Inspection
     party_ids = sim.party_ids

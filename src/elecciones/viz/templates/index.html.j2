@@ -573,6 +573,173 @@
     }
     .legend-item { display: inline-flex; align-items: center; gap: 5px; }
 
+    /* Majority Simulation Histogram */
+    .grid-2-hist {
+      display: grid;
+      grid-template-columns: minmax(0, 1.32fr) minmax(0, 0.88fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    @media (max-width: 980px) {
+      .grid-2-hist { grid-template-columns: minmax(0, 1fr); }
+    }
+    .hist-card {
+      display: flex;
+      flex-direction: column;
+      padding: 18px 20px 14px;
+    }
+    .hist-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .hist-title {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+    .hist-sub {
+      margin: 3px 0 0;
+      font-size: 0.9rem;
+      color: var(--ink-muted);
+      line-height: 1.4;
+    }
+    .hist-focus-btn {
+      display: none;
+      font-size: 11.5px;
+      padding: 4px 9px;
+      white-space: nowrap;
+    }
+    .hist-focus-btn.visible { display: inline-flex; align-items: center; gap: 4px; }
+    .hist-svg-wrap {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .hist-seg { transition: opacity 0.14s ease; }
+    .hist-callout { cursor: pointer; transition: opacity 0.14s ease; }
+    .hist-callout-halo {
+      paint-order: stroke;
+      stroke: #ffffff;
+      stroke-width: 4.5px;
+      stroke-linejoin: round;
+    }
+    .hist-bin-hit { cursor: crosshair; }
+    .hist-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      margin-top: 6px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 11.5px;
+      color: var(--ink-soft);
+    }
+    .maj-breakdown-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .maj-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .maj-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 9px 11px;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      background: #fcfbf8;
+      cursor: pointer;
+      transition: border-color 0.14s ease, background 0.14s ease, opacity 0.14s ease;
+    }
+    .maj-row:hover {
+      border-color: var(--border);
+      background: var(--bg-subtle);
+    }
+    .maj-row.active {
+      border-color: var(--border-strong);
+      background: #f5f2ea;
+      box-shadow: 0 1px 4px rgba(18, 18, 18, 0.08);
+    }
+    .maj-row.dimmed { opacity: 0.45; }
+    .maj-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .maj-row-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .maj-swatch {
+      width: 14px;
+      height: 5px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .maj-row-prob {
+      font-size: 14.5px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .maj-row-bar {
+      height: 6px;
+      background: #ece8df;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .maj-row-fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+    .maj-row-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+    .maj-insight-box {
+      background: var(--bg-warm);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.48;
+      color: var(--ink-muted);
+    }
+    .maj-insight-box strong { color: var(--ink); }
+    .maj-insight-cf {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border);
+      color: #78350f;
+      font-weight: 600;
+    }
+
     /* Cartogram */
     .cartogram-grid {
       display: grid;
@@ -953,7 +1120,7 @@
           {% endif %}
         </div>
         <div class="masthead-badges">
-          {% if metadata.blackout_phase == "blackout" or metadata.blackout_active or metadata.live_blackout_active %}
+          {% if metadata.blackout_phase == "blackout" %}
           <span class="badge badge-blackout" id="blackout-badge">Veda Electoral Art. 69.7 LOREG activa</span>
           {% elif metadata.blackout_phase == "post" %}
           <span class="badge" id="blackout-badge">Veda finalizada · Urnas cerradas (29-N 20:00 CET)</span>
@@ -1026,6 +1193,7 @@
   <nav class="subnav" aria-label="Navegación de secciones">
     <div class="nav-inner" id="subnav-links">
       <a href="#sec-resumen" class="active">Resumen y Hemiciclo</a>
+      <a href="#sec-mayorias">Probabilidad de Mayorías</a>
       <a href="#sec-cartograma">Mapa Provincial &amp; D'Hondt</a>
       <a href="#sec-tendencia">Tendencia de Encuestas</a>
       <a href="#sec-whatif">Simulador "What-If" &amp; Art. 99</a>
@@ -1099,6 +1267,41 @@
             </table>
           </div>
           <div class="cis-strip" id="cis-diff-strip"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 1B: SIMULATION MAJORITY HISTOGRAM -->
+    <section id="sec-mayorias">
+      <div class="section-head">
+        <h2>Distribución de Mayorías ({{ "{:,}".format(metadata.n_sims).replace(",", ".") }} Simulaciones)</h2>
+        <p>Cada barra agrupa los escenarios según el voto combinado de PP (+UPN-PP) y Vox</p>
+      </div>
+
+      <div class="grid-2-hist">
+        <div class="card hist-card">
+          <div class="hist-header">
+            <div>
+              <h3 class="hist-title">Probabilidad de cada mayoría</h3>
+              <p class="hist-sub">Simulaciones según el voto de PP y Vox; el color indica qué bloque suma mayoría.</p>
+            </div>
+            <button type="button" class="btn-outline hist-focus-btn" id="btn-hist-clear-focus">Mostrar todos los bloques</button>
+          </div>
+          <div class="svg-box hist-svg-wrap">
+            <svg id="majority-hist-svg" viewBox="0 0 680 435" role="img" aria-label="Histograma de simulaciones de mayoría según el voto de PP y Vox"></svg>
+          </div>
+          <div class="hist-footer">
+            <span>Toca o pasa el cursor por las barras para ver el desglose exacto · Pulsa una etiqueta para resaltar</span>
+            <span class="tabular">Modelo electoral 29-N · {{ "{:,}".format(metadata.n_sims).replace(",", ".") }} simulaciones</span>
+          </div>
+        </div>
+
+        <div class="card maj-breakdown-card">
+          <div>
+            <h3 class="card-title">Desglose de las cinco mayorías (mutuamente excluyentes)</h3>
+            <div class="maj-list" id="majority-breakdown"></div>
+          </div>
+          <div class="maj-insight-box" id="majority-insight"></div>
         </div>
       </div>
     </section>
@@ -1394,6 +1597,7 @@
         cis: DATA.metadata.exclude_cis_headline ? "without" : "with",
         mapMode: "winner",
         selectedCpro: "26",
+        histFocusCat: null,
         hiddenTrendParties: new Set(),
         pollsterFilter: "",
         pollsterSortKey: "shrunk_mae",
@@ -1936,6 +2140,478 @@
           const w = (n / 350) * 100;
           return `<div style="width:${w.toFixed(2)}%;background:${pColor(pid)};height:100%;" title="${esc(pShort(pid))}: ${n}"></div>`;
         }).join("");
+      }
+
+      // MAJORITY SIMULATION HISTOGRAM (EL PAÍS-STYLE STACKED DISTRIBUTION)
+      const HIST_STACK_FALLBACK = ["pp_solo", "pp_sin_vox", "pp_vox", "en_el_aire", "psoe_socios"];
+      const HIST_DISPLAY_ORDER = ["psoe_socios", "en_el_aire", "pp_vox", "pp_sin_vox", "pp_solo"];
+      const HIST_CAT_DEFAULTS = {
+        pp_solo: { key: "pp_solo", label: "PP solo", sublabel: "PP (+UPN) ≥176", color: "#0c2c5c" },
+        pp_sin_vox: { key: "pp_sin_vox", label: "PP sin Vox", sublabel: "con PNV y CCa", color: "#7ea9d4" },
+        pp_vox: { key: "pp_vox", label: "PP y Vox", sublabel: "mayoría absoluta", color: "#0055a7" },
+        en_el_aire: { key: "en_el_aire", label: "En el aire", sublabel: "depende de Junts", color: "#9ca3af" },
+        psoe_socios: { key: "psoe_socios", label: "Aliados de 2023", sublabel: "PSOE y socios, sin Junts", color: "#dc2626" },
+      };
+
+      function fmtHistBigPct(prob) {
+        const pct = Number(prob || 0) * 100;
+        if (pct <= 0) return "0%";
+        if (pct < 0.95) return "<1%";
+        return Math.round(pct) + "%";
+      }
+
+      function resolveMajorityHistogram() {
+        const pre = DATA.investiture && DATA.investiture.majority_histogram;
+        if (pre && Array.isArray(pre.bins) && pre.bins.length > 0 && Array.isArray(pre.categories)) {
+          return pre;
+        }
+        // Fallback synthesis from sim_sample for legacy forecast bundles lacking majority_histogram
+        const sample = DATA.sim_sample || [];
+        if (!sample.length) return null;
+        const psoeAllies = [
+          "PSOE", "FA", "PODEMOS", "COMPROMIS_FV", "UPC", "ARA_MES", "ADELANTE",
+          "ERC", "EH_BILDU", "PNV", "GEROA_BAI", "BNG", "CCA", "TERUEL_EXISTE", "SORIA_YA"
+        ];
+        const draws = sample.map(d => {
+          const sh = d.shares || {};
+          const st = d.seats || {};
+          const x = Number(sh.PP || 0) + Number(sh.UPN_PP || 0) + Number(sh.VOX || 0);
+          const sPp = Number(st.PP || 0) + Number(st.UPN_PP || 0);
+          const sNoVox = sPp + Number(st.PNV || 0) + Number(st.CCA || 0);
+          const sRight = sPp + Number(st.VOX || 0);
+          const sLeft = psoeAllies.reduce((acc, p) => acc + Number(st[p] || 0), 0);
+          let cat = "en_el_aire";
+          if (sPp >= 176) cat = "pp_solo";
+          else if (sNoVox >= 176) cat = "pp_sin_vox";
+          else if (sRight >= 176) cat = "pp_vox";
+          else if (sLeft >= 176) cat = "psoe_socios";
+          return { x, cat };
+        });
+        const xs = draws.map(d => d.x).sort((a, b) => a - b);
+        const bw = 1.0;
+        const xMin = Math.max(0, Math.floor(xs[0] / bw) * bw);
+        const xMax = Math.min(100, Math.ceil(xs[xs.length - 1] / bw) * bw);
+        const nBins = Math.max(4, Math.round((xMax - xMin) / bw));
+        const bins = [];
+        for (let b = 0; b < nBins; b++) {
+          bins.push({
+            x0: xMin + b * bw,
+            x1: xMin + (b + 1) * bw,
+            total: 0,
+            counts: { pp_solo: 0, pp_sin_vox: 0, pp_vox: 0, en_el_aire: 0, psoe_socios: 0 },
+          });
+        }
+        const catVals = { pp_solo: [], pp_sin_vox: [], pp_vox: [], en_el_aire: [], psoe_socios: [] };
+        for (const dr of draws) {
+          catVals[dr.cat].push(dr.x);
+          let idx = Math.floor((dr.x - xMin) / bw);
+          if (idx >= nBins) idx = nBins - 1;
+          if (idx >= 0 && idx < nBins) {
+            bins[idx].counts[dr.cat] += 1;
+            bins[idx].total += 1;
+          }
+        }
+        const qOf = (arr, q) => {
+          if (!arr.length) return null;
+          const s = [...arr].sort((a, b) => a - b);
+          return Number(s[Math.min(s.length - 1, Math.max(0, Math.floor((s.length - 1) * q)))].toFixed(2));
+        };
+        const categories = HIST_STACK_FALLBACK.map(k => {
+          const def = HIST_CAT_DEFAULTS[k];
+          const arr = catVals[k];
+          return {
+            key: k,
+            label: def.label,
+            sublabel: def.sublabel,
+            color: def.color,
+            count: arr.length,
+            prob: arr.length / draws.length,
+            median_vote_pct: qOf(arr, 0.5),
+            p10_vote_pct: qOf(arr, 0.1),
+            p90_vote_pct: qOf(arr, 0.9),
+          };
+        });
+        return {
+          n_sims: draws.length,
+          bin_width: bw,
+          x_min: xMin,
+          x_max: xMax,
+          x_label: "Voto de PP y Vox, en %",
+          mean_x: Number((xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(2)),
+          median_x: qOf(xs, 0.5),
+          p10_x: qOf(xs, 0.1),
+          p90_x: qOf(xs, 0.9),
+          threshold_50_x: null,
+          stack_order: [...HIST_STACK_FALLBACK],
+          categories,
+          bins,
+        };
+      }
+
+      function toggleHistFocus(catKey) {
+        STATE.histFocusCat = STATE.histFocusCat === catKey ? null : catKey;
+        renderMajorityHistogram();
+      }
+
+      function renderMajorityHistogram() {
+        const svg = document.getElementById("majority-hist-svg");
+        const breakdownEl = document.getElementById("majority-breakdown");
+        const insightEl = document.getElementById("majority-insight");
+        const clearBtn = document.getElementById("btn-hist-clear-focus");
+        if (!svg) return;
+
+        const hist = resolveMajorityHistogram();
+        if (!hist || !hist.bins || !hist.bins.length) {
+          svg.innerHTML = `<text x="340" y="210" text-anchor="middle" fill="#78716c" font-size="13">Sin datos de histograma disponibles</text>`;
+          return;
+        }
+
+        const focus = STATE.histFocusCat;
+        if (clearBtn && clearBtn.classList) {
+          clearBtn.classList.toggle("visible", Boolean(focus));
+        }
+
+        const stackOrder = hist.stack_order || HIST_STACK_FALLBACK;
+        const catByKey = {};
+        (hist.categories || []).forEach(c => { catByKey[c.key] = c; });
+        const getCat = k => catByKey[k] || Object.assign({ count: 0, prob: 0 }, HIST_CAT_DEFAULTS[k] || { key: k, label: k, sublabel: "", color: "#64748b" });
+
+        const isCompact = (typeof window !== "undefined" && Number(window.innerWidth || 1280) <= 620);
+        const W = isCompact ? 400 : 680;
+        const H = isCompact ? 470 : 435;
+        const padL = isCompact ? 14 : 26;
+        const padR = isCompact ? 14 : 26;
+        const plotTop = isCompact ? 96 : 84;
+        const plotBottom = isCompact ? 398 : 366;
+        const plotW = W - padL - padR;
+        const plotH = plotBottom - plotTop;
+        if (typeof svg.setAttribute === "function") {
+          svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+        }
+
+        const bins = hist.bins;
+        const xMin = Number(hist.x_min);
+        const xMax = Number(hist.x_max);
+        const xSpan = Math.max(1e-6, xMax - xMin);
+        const maxTotal = Math.max(1, ...bins.map(b => Number(b.total || 0)));
+        const xPx = val => padL + ((val - xMin) / xSpan) * plotW;
+        const barTopY = tot => plotBottom - (Number(tot || 0) / maxTotal) * plotH;
+
+        // Determine active counterfactual / What-If scenario marker if modified
+        const cf = isCounterfactualMode();
+        const { solved, movedCount } = computeCurrentWhatIf();
+        const isScenarioModified = cf || movedCount > 0;
+        const curRightPct = isScenarioModified
+          ? ((Number((solved.natShares || {}).PP || 0) + Number((solved.natShares || {}).UPN_PP || 0) + Number((solved.natShares || {}).VOX || 0)) * 100)
+          : null;
+
+        let html = "";
+
+        // Top directional arrows ("Menos voto PP y Vox" <-  |  -> "Más voto PP y Vox")
+        const dirFont = isCompact ? 11.5 : 12;
+        const leftDirX = padL + 4;
+        const rightDirX = W - padR - 4;
+        const arrowLen = isCompact ? 56 : 74;
+        const arrowY = isCompact ? 54 : 52;
+        html += `<g fill="#8c857d" stroke="#b8b1a7" font-size="${dirFont}">`;
+        html += `<text x="${leftDirX}" y="24" stroke="none" font-weight="500">Menos voto</text>`;
+        html += `<text x="${leftDirX}" y="39" stroke="none" font-weight="500">PP y Vox</text>`;
+        html += `<line x1="${leftDirX + arrowLen}" y1="${arrowY}" x2="${leftDirX + 2}" y2="${arrowY}" stroke-width="1.2" />`;
+        html += `<polyline points="${leftDirX + 7},${arrowY - 3.5} ${leftDirX + 1.5},${arrowY} ${leftDirX + 7},${arrowY + 3.5}" fill="none" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />`;
+        html += `<text x="${rightDirX}" y="24" text-anchor="end" stroke="none" font-weight="500">Más voto</text>`;
+        html += `<text x="${rightDirX}" y="39" text-anchor="end" stroke="none" font-weight="500">PP y Vox</text>`;
+        html += `<line x1="${rightDirX - arrowLen}" y1="${arrowY}" x2="${rightDirX - 2}" y2="${arrowY}" stroke-width="1.2" />`;
+        html += `<polyline points="${rightDirX - 7},${arrowY - 3.5} ${rightDirX - 1.5},${arrowY} ${rightDirX - 7},${arrowY + 3.5}" fill="none" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />`;
+        html += `</g>`;
+
+        // Stacked histogram columns (contiguous editorial step bars)
+        const rawBarW = plotW / bins.length;
+        const drawBarW = rawBarW + 0.35;
+        let peakBinIdx = 0;
+        for (let i = 1; i < bins.length; i++) {
+          if ((bins[i].total || 0) > (bins[peakBinIdx].total || 0)) peakBinIdx = i;
+        }
+
+        html += `<g id="hist-bars-layer">`;
+        for (let i = 0; i < bins.length; i++) {
+          const b = bins[i];
+          const bx = padL + i * rawBarW;
+          let curY = plotBottom;
+          const counts = b.counts || {};
+          for (const k of stackOrder) {
+            const cnt = Number(counts[k] || 0);
+            if (cnt <= 0) continue;
+            const segH = (cnt / maxTotal) * plotH;
+            const segY = curY - segH;
+            const cat = getCat(k);
+            const op = !focus || focus === k ? "0.97" : "0.16";
+            html += `<rect class="hist-seg" data-cat="${esc(k)}" x="${bx.toFixed(2)}" y="${segY.toFixed(2)}" width="${drawBarW.toFixed(2)}" height="${Math.max(0.6, segH + 0.25).toFixed(2)}" fill="${cat.color}" fill-opacity="${op}" />`;
+            curY = segY;
+          }
+        }
+        html += `</g>`;
+
+        // Crisp x-axis baseline
+        html += `<line x1="${padL}" y1="${plotBottom}" x2="${W - padR}" y2="${plotBottom}" stroke="#d6d0c4" stroke-width="1" />`;
+
+        // X-axis tick labels (clean 4pp intervals like 40%, 44%, 48%, 52%, 56%, 60%)
+        const tickStep = xSpan > 32 ? 6 : 4;
+        const firstTick = Math.ceil((xMin + 0.6) / tickStep) * tickStep;
+        const tickFont = isCompact ? 12 : 12.5;
+        for (let tv = firstTick; tv <= xMax - 0.5; tv += tickStep) {
+          const tx = xPx(tv);
+          html += `<text x="${tx.toFixed(1)}" y="${(plotBottom + 20).toFixed(1)}" text-anchor="middle" font-size="${tickFont}" fill="#78716c" class="tabular">${tv}%</text>`;
+        }
+        html += `<text x="${(W / 2).toFixed(1)}" y="${(plotBottom + (isCompact ? 48 : 46)).toFixed(1)}" text-anchor="middle" font-size="${isCompact ? 13 : 13.2}" font-weight="500" fill="#292524">${esc(hist.x_label || "Voto de PP y Vox, en %")}</text>`;
+
+        // Counterfactual / What-If live vertical reference marker
+        if (isScenarioModified && curRightPct !== null) {
+          const clampedX = Math.max(xMin, Math.min(xMax, curRightPct));
+          const mx = xPx(clampedX);
+          const pillW = isCompact ? 96 : 114;
+          const pillX = Math.max(padL + 2, Math.min(W - padR - pillW - 2, mx - pillW / 2));
+          const pillY = plotTop + 4;
+          html += `<g class="hist-cf-marker" pointer-events="none">`;
+          html += `<line x1="${mx.toFixed(1)}" y1="${(pillY + 18).toFixed(1)}" x2="${mx.toFixed(1)}" y2="${plotBottom}" stroke="#1c1917" stroke-width="1.8" stroke-dasharray="4 3" />`;
+          html += `<rect x="${pillX.toFixed(1)}" y="${pillY}" width="${pillW}" height="20" rx="4" fill="#1c1917" />`;
+          html += `<text x="${(pillX + pillW / 2).toFixed(1)}" y="${pillY + 13.5}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#ffffff" class="tabular">Sim: ${curRightPct.toFixed(1)}%</text>`;
+          html += `</g>`;
+        }
+
+        // Helper for local bar clearance so annotations never collide with histogram bars
+        const minBarTopNear = (cx, halfSpan) => {
+          let bestTop = plotBottom;
+          for (let i = 0; i < bins.length; i++) {
+            const bMid = padL + (i + 0.5) * rawBarW;
+            if (bMid >= cx - halfSpan && bMid <= cx + halfSpan) {
+              const t = barTopY(bins[i].total);
+              if (t < bestTop) bestTop = t;
+            }
+          }
+          return bestTop;
+        };
+
+        // Find where the bell rises on the left and falls on the right
+        let riseLeftPx = padL + plotW * 0.34;
+        for (let i = 0; i < bins.length; i++) {
+          if ((bins[i].total || 0) >= maxTotal * 0.44) {
+            riseLeftPx = padL + i * rawBarW;
+            break;
+          }
+        }
+        let fallRightPx = padL + plotW * 0.68;
+        for (let i = bins.length - 1; i >= 0; i--) {
+          if ((bins[i].total || 0) >= maxTotal * 0.44) {
+            fallRightPx = padL + (i + 1) * rawBarW;
+            break;
+          }
+        }
+
+        // Peak center callout ("PP y Vox") sits cleanly in the header zone above plotTop
+        const peakBin = bins[peakBinIdx];
+        const peakCenterPx = xPx(0.5 * (Number(peakBin.x0) + Number(peakBin.x1)));
+        const peakX = Math.max(isCompact ? 132 : 215, Math.min(isCompact ? W - 132 : W - 215, peakCenterPx));
+
+        // Left whitespace callouts ("En el aire" above "Aliados de 2023")
+        const leftMinX = padL + (isCompact ? 56 : 74);
+        const leftMaxX = Math.max(leftMinX, riseLeftPx - (isCompact ? 52 : 70));
+        const leftX = Math.max(leftMinX, Math.min(leftMaxX, (leftMinX + leftMaxX) * 0.55));
+        const leftClearY = minBarTopNear(leftX, isCompact ? 42 : 58);
+
+        // Right whitespace callouts ("PP sin Vox" above "PP solo")
+        const rightMaxX = W - padR - (isCompact ? 54 : 70);
+        const rightMinX = Math.min(rightMaxX, fallRightPx + (isCompact ? 50 : 68));
+        const rightX = Math.min(rightMaxX, Math.max(rightMinX, (rightMinX + rightMaxX) * 0.48));
+        const rightClearY = minBarTopNear(rightX, isCompact ? 40 : 56);
+
+        const renderCallout = (catKey, cx, baseY, lines, opts = {}) => {
+          const cat = getCat(catKey);
+          const pctStr = fmtHistBigPct(cat.prob);
+          const op = !focus || focus === catKey ? "1" : "0.28";
+          const dashW = opts.dashW || (isCompact ? 26 : 30);
+          const pctFont = opts.pctFont || (isCompact ? 22 : 23.5);
+          const titleFont = opts.titleFont || (isCompact ? 12.5 : 13);
+          const subFont = opts.subFont || (isCompact ? 10.5 : 11);
+          const textCol = catKey === "en_el_aire" ? "#78716c" : cat.color;
+          let g = `<g class="hist-callout" data-cat="${esc(catKey)}" opacity="${op}">`;
+          g += `<rect x="${(cx - dashW / 2).toFixed(1)}" y="${baseY.toFixed(1)}" width="${dashW}" height="4.2" rx="1.5" fill="${cat.color}" />`;
+          g += `<text x="${cx.toFixed(1)}" y="${(baseY + pctFont + 4).toFixed(1)}" text-anchor="middle" font-size="${pctFont}" font-weight="800" fill="${textCol}" class="tabular hist-callout-halo">${esc(pctStr)}</text>`;
+          let curY = baseY + pctFont + 20;
+          lines.forEach(item => {
+            const fSize = item.bold ? titleFont : subFont;
+            const fWeight = item.bold ? "700" : "500";
+            const fillCol = item.muted ? "#78716c" : textCol;
+            g += `<text x="${cx.toFixed(1)}" y="${curY.toFixed(1)}" text-anchor="middle" font-size="${fSize}" font-weight="${fWeight}" fill="${fillCol}" class="hist-callout-halo">${esc(item.text)}</text>`;
+            curY += item.bold ? (isCompact ? 14.5 : 15.5) : (isCompact ? 13 : 14);
+          });
+          g += `</g>`;
+          return g;
+        };
+
+        // Interactive hover cursor + bar hit targets (rendered below callouts so callouts stay clickable)
+        html += `<rect id="hist-hover-band" x="0" y="${plotTop}" width="${rawBarW.toFixed(2)}" height="${plotH}" fill="#1c1917" fill-opacity="0.09" style="display:none;pointer-events:none;" />`;
+        html += `<g id="hist-hits-layer">`;
+        for (let i = 0; i < bins.length; i++) {
+          const b = bins[i];
+          if ((b.total || 0) <= 0) continue;
+          const bx = padL + i * rawBarW;
+          const bTop = Math.min(plotBottom - 24, barTopY(b.total) - 8);
+          html += `<rect class="hist-bin-hit" data-bin="${i}" x="${bx.toFixed(2)}" y="${Math.max(plotTop, bTop).toFixed(2)}" width="${rawBarW.toFixed(2)}" height="${(plotBottom - Math.max(plotTop, bTop)).toFixed(2)}" fill="transparent" />`;
+        }
+        html += `</g>`;
+
+        // 1. Center Peak Callout: PP y Vox
+        html += renderCallout("pp_vox", peakX, 14, [{ text: "PP y Vox", bold: true }], { pctFont: isCompact ? 24 : 25 });
+
+        // 2. Left Callouts: En el aire + Aliados de 2023 (safely positioned above red tail)
+        const leftBlockH = isCompact ? 174 : 158;
+        const leftStartMax = Math.max(plotTop + 12, leftClearY - leftBlockH - 12);
+        const aireY = Math.min(isCompact ? 148 : 138, leftStartMax);
+        const psoeY = aireY + (isCompact ? 86 : 78);
+        html += renderCallout(
+          "en_el_aire",
+          leftX,
+          aireY,
+          isCompact
+            ? [{ text: "En el aire", bold: true }, { text: "depende de", muted: true }, { text: "Junts", muted: true }]
+            : [{ text: "En el aire", bold: true }, { text: "depende de Junts", muted: true }]
+        );
+        html += renderCallout(
+          "psoe_socios",
+          leftX,
+          psoeY,
+          isCompact
+            ? [{ text: "Aliados de", bold: true }, { text: "2023", bold: true }, { text: "PSOE y socios,", bold: false }, { text: "sin Junts", bold: false }]
+            : [{ text: "Aliados de 2023", bold: true }, { text: "PSOE y socios, sin Junts", bold: false }]
+        );
+
+        // 3. Right Callouts: PP sin Vox + PP solo (safely positioned above right tail)
+        const rightBlockH = isCompact ? 142 : 134;
+        const rightStartMax = Math.max(plotTop + 28, rightClearY - rightBlockH - 12);
+        const sinVoxY = Math.min(isCompact ? 212 : 186, rightStartMax);
+        const soloY = sinVoxY + (isCompact ? 76 : 74);
+        html += renderCallout(
+          "pp_sin_vox",
+          rightX,
+          sinVoxY,
+          [{ text: "PP sin Vox", bold: true }, { text: "con PNV y CCa", bold: false }]
+        );
+        html += renderCallout(
+          "pp_solo",
+          rightX,
+          soloY,
+          [{ text: "PP solo", bold: true }]
+        );
+
+        svg.innerHTML = html;
+
+        // Wire callout click-to-focus
+        svg.querySelectorAll(".hist-callout").forEach(el => {
+          el.addEventListener("click", () => toggleHistFocus(el.getAttribute("data-cat")));
+        });
+
+        // Wire bin hover/tap tooltips
+        const hoverBand = document.getElementById("hist-hover-band");
+        const nSims = Math.max(1, Number(hist.n_sims || 1));
+        svg.querySelectorAll(".hist-bin-hit").forEach(rect => {
+          const onShow = evt => {
+            const idx = Number(rect.getAttribute("data-bin"));
+            const b = bins[idx];
+            if (!b) return;
+            if (hoverBand && typeof hoverBand.setAttribute === "function") {
+              hoverBand.setAttribute("x", (padL + idx * rawBarW).toFixed(2));
+              hoverBand.style.display = "block";
+            }
+            const bTot = Number(b.total || 0);
+            const bShare = (bTot / nSims) * 100;
+            const rowsHtml = [...stackOrder].reverse().map(k => {
+              const cnt = Number((b.counts || {})[k] || 0);
+              if (cnt <= 0) return "";
+              const cat = getCat(k);
+              const pctInBin = bTot > 0 ? (cnt / bTot) * 100 : 0;
+              return `<div style="display:flex;justify-content:space-between;gap:10px;margin-top:2px;"><span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${cat.color};margin-right:5px;"></span>${esc(cat.label)}</span><strong class="tabular">${pctInBin.toFixed(0)}% (${fmtInt(cnt)})</strong></div>`;
+            }).join("");
+            showTip(
+              evt,
+              `<div><strong>PP + Vox: ${Number(b.x0).toFixed(1)}% – ${Number(b.x1).toFixed(1)}%</strong></div>` +
+              `<div style="opacity:0.85;font-size:11px;margin-bottom:4px;">${fmtInt(bTot)} simulaciones (${bShare.toFixed(2)}% del total)</div>` +
+              rowsHtml
+            );
+          };
+          rect.addEventListener("mouseenter", onShow);
+          rect.addEventListener("mousemove", onShow);
+          rect.addEventListener("click", onShow);
+          rect.addEventListener("mouseleave", () => {
+            if (hoverBand) hoverBand.style.display = "none";
+            hideTip();
+          });
+        });
+
+        // Render companion breakdown card & insights
+        renderMajorityBreakdown(hist, getCat, isScenarioModified, curRightPct);
+      }
+
+      function renderMajorityBreakdown(hist, getCat, isScenarioModified, curRightPct) {
+        const listEl = document.getElementById("majority-breakdown");
+        const insightEl = document.getElementById("majority-insight");
+        const focus = STATE.histFocusCat;
+        if (listEl) {
+          listEl.innerHTML = HIST_DISPLAY_ORDER.map(k => {
+            const cat = getCat(k);
+            const pct = Number(cat.prob || 0) * 100;
+            const pctLabel = pct > 0 && pct < 0.1 ? "<0.1%" : pct.toFixed(1) + "%";
+            const cls = focus ? (focus === k ? "maj-row active" : "maj-row dimmed") : "maj-row";
+            const voteSpan = (cat.p10_vote_pct !== null && cat.p10_vote_pct !== undefined && cat.p90_vote_pct !== null && cat.p90_vote_pct !== undefined)
+              ? `Voto PP+Vox: ${Number(cat.p10_vote_pct).toFixed(1)}–${Number(cat.p90_vote_pct).toFixed(1)}%`
+              : "Sin tiradas en rango";
+            return `
+              <div class="${cls}" data-cat="${esc(k)}" role="button" tabindex="0">
+                <div class="maj-row-top">
+                  <span class="maj-row-title">
+                    <span class="maj-swatch" style="background:${cat.color};"></span>
+                    <span>${esc(cat.label)}</span>
+                    ${cat.sublabel ? `<span class="muted" style="font-weight:500;font-size:11.5px;">· ${esc(cat.sublabel)}</span>` : ""}
+                  </span>
+                  <span class="maj-row-prob">${pctLabel}</span>
+                </div>
+                <div class="maj-row-bar">
+                  <div class="maj-row-fill" style="width:${Math.min(100, Math.max(pct > 0 ? 1.2 : 0, pct)).toFixed(1)}%;background:${cat.color};"></div>
+                </div>
+                <div class="maj-row-meta tabular">
+                  <span>${fmtInt(cat.count || 0)} de ${fmtInt(hist.n_sims || 0)} sims</span>
+                  <span>${voteSpan}</span>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+          listEl.querySelectorAll(".maj-row").forEach(row => {
+            row.addEventListener("click", () => toggleHistFocus(row.getAttribute("data-cat")));
+            row.addEventListener("keydown", evt => {
+              if (evt.key === "Enter" || evt.key === " ") {
+                evt.preventDefault();
+                toggleHistFocus(row.getAttribute("data-cat"));
+              }
+            });
+          });
+        }
+
+        if (insightEl) {
+          const rightTotal = (Number(getCat("pp_solo").prob || 0) + Number(getCat("pp_sin_vox").prob || 0) + Number(getCat("pp_vox").prob || 0)) * 100;
+          const threshTxt = hist.threshold_50_x !== null && hist.threshold_50_x !== undefined
+            ? `El bloque <strong>PP + Vox</strong> cruza el 50% de probabilidad de alcanzar mayoría absoluta (&ge;176) a partir del <strong>${Number(hist.threshold_50_x).toFixed(1)}%</strong> de voto combinado. `
+            : "";
+          const medTxt = hist.median_x !== null && hist.median_x !== undefined
+            ? `Mediana simulada de PP + Vox: <strong>${Number(hist.median_x).toFixed(1)}%</strong> (80%: ${Number(hist.p10_x).toFixed(1)}–${Number(hist.p90_x).toFixed(1)}%), con mayoría de derechas en el <strong>${rightTotal.toFixed(1)}%</strong> de las tiradas.`
+            : "";
+          const cfHtml = isScenarioModified && curRightPct !== null
+            ? `<div class="maj-insight-cf tabular">Escenario activo (${STATE.engine.toUpperCase()}, ${STATE.cis === "with" ? "con CIS" : "sin CIS"}): PP + Vox suma ${curRightPct.toFixed(1)}% (marcado en el histograma).</div>`
+            : "";
+          insightEl.innerHTML =
+            `<div>${threshTxt}${medTxt}</div>` +
+            `<div style="margin-top:5px;font-size:11px;">PP incluye UPN-PP en Navarra. Las cinco categorías particionan el 100% de las simulaciones de forma excluyente (<em>PP solo</em> &rarr; <em>PP sin Vox</em> &rarr; <em>PP y Vox</em> &rarr; <em>Aliados de 2023</em> &rarr; <em>En el aire</em>).</div>` +
+            cfHtml;
+        }
       }
 
       // 52-PROVINCE CARTOGRAM & D'HONDT INSPECTOR
@@ -2725,9 +3401,18 @@
 
       function refreshInteractiveScenarioViews() {
         updateWhatIfAndPact();
+        renderMajorityHistogram();
         renderCartogram();
         renderBattlegrounds();
         renderDistrictInspector();
+      }
+
+      const histClearBtn = document.getElementById("btn-hist-clear-focus");
+      if (histClearBtn) {
+        histClearBtn.addEventListener("click", () => {
+          STATE.histFocusCat = null;
+          renderMajorityHistogram();
+        });
       }
 
       document.querySelectorAll("#engine-toggle .seg-btn").forEach(btn => {
@@ -2839,7 +3524,7 @@
         }
       }
 
-      // Responsive trend chart redraw & touch tooltip dismissal (guarded for headless tests)
+      // Responsive chart redraw & touch tooltip dismissal (guarded for headless tests)
       if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
         let lastCompact = Number(window.innerWidth || 1280) <= 620;
         let resizeTimer = null;
@@ -2849,8 +3534,12 @@
           lastCompact = nowCompact;
           if (typeof setTimeout === "function") {
             if (resizeTimer) clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => { renderTrendChart(); }, 120);
+            resizeTimer = setTimeout(() => {
+              renderMajorityHistogram();
+              renderTrendChart();
+            }, 120);
           } else {
+            renderMajorityHistogram();
             renderTrendChart();
           }
         });
@@ -2948,6 +3637,7 @@
       renderFreshnessAge();
       syncModeButtons();
       renderHemicycleAndNational();
+      renderMajorityHistogram();
       renderDistrictSelect();
       renderCartogram();
       renderBattlegrounds();
