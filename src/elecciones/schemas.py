@@ -2419,6 +2419,7 @@ class InvestitureSummary:
     first_ballot: dict[str, PactProbability]
     second_ballot: dict[str, SecondBallotScenario]
     deadlock_prob: float
+    majority_histogram: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         dp = _require_float(self.deadlock_prob, "deadlock_prob")
@@ -2428,26 +2429,42 @@ class InvestitureSummary:
             raise SchemaValidationError("first_ballot must not be empty")
         if not self.second_ballot:
             raise SchemaValidationError("second_ballot must not be empty")
+        if self.majority_histogram is not None:
+            mh = _require_mapping(self.majority_histogram, "majority_histogram")
+            if _require_int(mh.get("n_sims"), "majority_histogram.n_sims") < 1:
+                raise SchemaValidationError("majority_histogram.n_sims must be >= 1")
+            _require_sequence_not_str(mh.get("categories"), "majority_histogram.categories")
+            _require_sequence_not_str(mh.get("bins"), "majority_histogram.bins")
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> InvestitureSummary:
         d = _require_mapping(data, "InvestitureSummary")
         fb = _require_mapping(d.get("first_ballot"), "first_ballot")
         sb = _require_mapping(d.get("second_ballot"), "second_ballot")
+        raw_mh = d.get("majority_histogram")
+        mh = (
+            dict(_require_mapping(raw_mh, "majority_histogram"))
+            if raw_mh is not None
+            else None
+        )
         return cls(
             first_ballot={str(k): PactProbability.from_dict(v) for k, v in fb.items()},
             second_ballot={
                 str(k): SecondBallotScenario.from_dict(v) for k, v in sb.items()
             },
             deadlock_prob=_require_float(d.get("deadlock_prob"), "deadlock_prob"),
+            majority_histogram=mh,
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "first_ballot": {k: v.to_dict() for k, v in self.first_ballot.items()},
             "second_ballot": {k: v.to_dict() for k, v in self.second_ballot.items()},
             "deadlock_prob": self.deadlock_prob,
         }
+        if self.majority_histogram is not None:
+            out["majority_histogram"] = dict(self.majority_histogram)
+        return out
 
 
 @dataclass(frozen=True, slots=True)

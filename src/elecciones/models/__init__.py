@@ -16,6 +16,7 @@ from elecciones.models.dhondt import (
 from elecciones.models.ensemble import combine_stage1_results, run_stage1
 from elecciones.models.investiture import (
     compute_investiture_summary,
+    compute_majority_histogram,
     evaluate_first_ballot,
     evaluate_second_ballot,
 )
@@ -47,6 +48,7 @@ __all__ = [
     "allocate_packed_chunk_inplace",
     "combine_stage1_results",
     "compute_investiture_summary",
+    "compute_majority_histogram",
     "compute_pollster_ratings",
     "estimate_empirical_error_hierarchy",
     "evaluate_first_ballot",

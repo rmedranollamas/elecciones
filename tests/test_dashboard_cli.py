@@ -36,6 +36,9 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
     assert "Madrid — 38 escaños" in text
     assert "Madrid (28)" not in text
     assert 'id="hemicycle-svg"' in text
+    assert 'id="majority-hist-svg"' in text
+    assert 'id="majority-breakdown"' in text
+    assert "Probabilidad de cada mayoría" in text
     assert 'id="cartogram-grid"' in text
     assert 'id="district-select"' in text
     assert 'id="freshness-bar"' in text
@@ -64,6 +67,11 @@ def test_generate_dashboard_standalone_html_and_script_safety(tmp_path: Path) ->
     assert by_c["28"]["seats_2026"] == 38
     assert by_c["11"]["seats_2026"] == 8
     assert len(payload["sim_sample"]) == 200
+    mh = payload["investiture"].get("majority_histogram")
+    assert mh is not None
+    assert mh["n_sims"] == payload["metadata"]["n_sims"]
+    assert len(mh["categories"]) == 5
+    assert len(mh["bins"]) >= 10
     assert payload["metadata"]["latest_poll"] is not None
     assert payload["metadata"]["latest_poll"]["pollster"]
     assert payload["metadata"]["latest_poll"]["fieldwork_end"]
@@ -195,6 +203,21 @@ function parseTotalSeats(tbodyHtml) {{
 
 const baseTable = getEl("national-table-tbody").innerHTML;
 const baseInsp = getEl("insp-tbody").innerHTML;
+const baseHistSvg = getEl("majority-hist-svg").innerHTML;
+const baseHistBreakdown = getEl("majority-breakdown").innerHTML;
+const hasHistBars = baseHistSvg.includes("hist-seg") && baseHistSvg.includes("PP y Vox");
+if (!hasHistBars || !baseHistSvg.includes("Voto de PP y Vox")) {{
+  throw new Error("Majority histogram SVG did not render expected bars and labels");
+}}
+const hasAllCats = baseHistBreakdown.includes("Aliados de 2023")
+  && baseHistBreakdown.includes("En el aire")
+  && baseHistBreakdown.includes("PP solo");
+if (!hasAllCats) {{
+  throw new Error("Majority breakdown panel missing expected categories");
+}}
+if (baseHistSvg.includes("hist-cf-marker")) {{
+  throw new Error("Base majority histogram should not show counterfactual marker");
+}}
 const baseCartoCount = getEl("cartogram-grid").children.length;
 if (baseCartoCount !== 52) throw new Error("Expected 52 cartogram tiles, got " + baseCartoCount);
 if (getEl("insp-ccaa").textContent.includes("ESCENARIO SIMULADO")) {{
@@ -205,6 +228,9 @@ engineBtns[1].click(); // Switch to kernel
 const kernelTable = getEl("national-table-tbody").innerHTML;
 const kernelSeats = parseTotalSeats(kernelTable);
 const kernelInsp = getEl("insp-tbody").innerHTML;
+if (!getEl("majority-hist-svg").innerHTML.includes("hist-cf-marker")) {{
+  throw new Error("Counterfactual kernel switch did not draw histogram scenario marker");
+}}
 if (!getEl("mode-notice").classList.contains("visible")) {{
   throw new Error("Notice missing in kernel");
 }}
@@ -224,11 +250,17 @@ engineBtns[0].click(); // Return to ensemble, then test What-If slider live cart
 if (getEl("mode-notice").classList.contains("visible")) {{
   throw new Error("Notice should clear when returning to base ensemble");
 }}
+if (getEl("majority-hist-svg").innerHTML.includes("hist-cf-marker")) {{
+  throw new Error("Counterfactual marker should clear when returning to base ensemble");
+}}
 sliderInputPp.value = "4.0";
 sliderInputPp.dispatchEvent({{ type: "input" }});
 const sliderInsp = getEl("insp-tbody").innerHTML;
 if (sliderInsp === baseInsp || !getEl("insp-ccaa").textContent.includes("ESCENARIO SIMULADO")) {{
   throw new Error("What-If slider did not update District Inspector live");
+}}
+if (!getEl("majority-hist-svg").innerHTML.includes("hist-cf-marker")) {{
+  throw new Error("What-If slider did not draw scenario marker on majority histogram");
 }}
 
 if (kernelTable === baseTable) throw new Error("Kernel switcher left table unchanged");
